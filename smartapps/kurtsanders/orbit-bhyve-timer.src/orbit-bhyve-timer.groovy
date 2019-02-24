@@ -51,26 +51,26 @@ def mainMenu() {
                 uninstall: true)
     {
         section ("Orbit B•Hyve™ Login Information") {
-            input ( name: "username",
-                   type: "enum",
-                   title: "Select the login?",
-                   options: ["kurt@kurtsanders.com", "kurtsanders.myXnetgear.com"],
+            input ( name    : "username",
+                   type     : "enum",
+                   title    : "Select the login?",
+                   options  : ["kurt@kurtsanders.com", "kurtsanders.myXnetgear.com"],
                    submitOnChange: true,
-                   multiple: false,
-                   required: true
+                   multiple : false,
+                   required : true
                   )
-            input ( name : "password",
-                   type: "enum",
-                   title: "Select the password?",
-                   options: ["Apples55", "badpassword"],
+            input ( name    : "password",
+                   type     : "enum",
+                   title    : "Select the password?",
+                   options  : ["Apples55", "badpassword"],
                    submitOnChange: true,
-                   multiple: false,
-                   required: true
+                   multiple : false,
+                   required : true
                   )
         }
         section ("${app.name} Information") {
-            paragraph image: getAppImg("icons/bhyveIcon.png"),
-                title	: appAuthor(),
+            paragraph image : getAppImg("icons/bhyveIcon.png"),
+                title	    : appAuthor(),
                     required: false,
                     "Version: ${version()[0]}\n" +
                     "Updates: ${version()[1]}"
@@ -135,13 +135,13 @@ def mainOptions() {
 def initialize() {
     setScheduler(schedulerFreq)
     subscribe(app, appTouchHandler)
-//    updateStateVar()
 }
 
 def installed() {
     add_bhyve_ChildDevice()
     initialize()
 }
+
 def uninstalled() {
     log.info "Removing ${app.name}..."
     remove_bhyve_ChildDevice()
@@ -165,6 +165,8 @@ def appTouchHandler(evt="") {
             log.info "${it} <-> DNI: ${it.deviceNetworkId}"
         }
     }
+*/
+
 }
 
 def add_bhyve_ChildDevice() {
