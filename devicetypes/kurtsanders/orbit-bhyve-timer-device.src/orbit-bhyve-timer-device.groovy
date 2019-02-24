@@ -25,7 +25,9 @@ metadata {
         capability "Refresh"
         capability "Sensor"
         capability "Switch"
-
+        capability "Water Sensor"
+        capability "Valve"
+        capability "Timed Session"
     }
     tiles(scale: 2) {
         multiAttributeTile(name:"switch", type:"generic", width:6, height:4, canChangeIcon: true) {
