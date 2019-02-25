@@ -42,35 +42,39 @@ preferences {
 }
 
 def mainMenu() {
-    def orbitBhyveLoginOK 	= OrbitBhyveLogin()
-    def imageName    		= orbitBhyveLoginOK?getAppImg("icons/success-icon.png"):getAppImg("icons/failure-icon.png")
+    def orbitBhyveLoginOK = false
+    if ( (username) && (password) ) {
+        orbitBhyveLoginOK = OrbitBhyveLogin()
+    }
     dynamicPage(name: "mainMenu",
                 title: "Orbit B•Hyve™ Timer Account Login Information",
-                nextPage: orbitBhyveLoginOK?"mainOptions":null,
+                nextPage: (orbitBhyveLoginOK)?"mainOptions":null,
                 submitOnChange: true,
                 install: false,
                 uninstall: true)
     {
-        if (state?.orbit_api_key) {
-            section {
-                href(name: "Orbit B•Hyve™ Timer Options",
-                     page: "mainOptions",
-                     description: "Complete Orbit B•Hyve™ Options")
-            }
-            section("Orbit B•Hyve™ Information") {
-                paragraph "Your Login Information is Valid"
-                paragraph image : getAppImg(imageName),
-                    title: "Account name: ${state.user_name}",
-                    required: false,
-                    ""
-            }
-        } else {
-            section("Orbit B•Hyve™ Status/Information") {
-                paragraph "Your Login Information is INVALID"
-                paragraph image: getAppImg("icons/failure-icon.png"),
-                    required: false,
-                     title: "$state.statusText",
-                     ""
+        if ( (username) && (password) ) {
+            if (state?.orbit_api_key) {
+                section("Orbit B•Hyve™ Information") {
+                    paragraph "Your Login Information is Valid"
+                    paragraph image : getAppImg("icons/success-icon.png"),
+                        title: "Account name: ${state.user_name}",
+                        required: false,
+                        ""
+                }
+                section {
+                    href(name: "Orbit B•Hyve™ Timer Options",
+                         page: "mainOptions",
+                         description: "Complete Orbit B•Hyve™ Options")
+                }
+            } else {
+                section("Orbit B•Hyve™ Status/Information") {
+                    paragraph "Your Login Information is INVALID"
+                    paragraph image: getAppImg("icons/failure-icon.png"),
+                        required: false,
+                        title: "$state.statusText",
+                        ""
+                }
             }
         }
         section () {
@@ -161,7 +165,7 @@ def initialize() {
 }
 
 def installed() {
-    add_bhyve_ChildDevice()
+//    add_bhyve_ChildDevice()
     initialize()
 }
 
@@ -388,8 +392,8 @@ def debugVerbose(String message) {if (debugVerbose){log.info "${message}"}}
 def infoVerbose(String message)  {if (infoVerbose){log.info "${message}"}}
 String appAuthor()	 { return "SanderSoft™" }
 String getAppImg(imgName) { return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/$imgName" }
-String DTHName() { return "Orbit Bhyve Timer Device" }
-String DTHDNI() { return "orbit-bhyve-${app.id}" }
+String DTHName() { return "Orbit Bhyve" }
+String DTHDNI() { return "orbit-bhyve-" }
 String orbitBhyveLoginAPI() { return "https://api.orbitbhyve.com/v1/" }
 String web_postdata() { return "{\n    \"session\": {\n        \"email\": \"$username\",\n        \"password\": \"$password\"\n    }\n}" }
 Map OrbitBhyveLoginHeaders() {
