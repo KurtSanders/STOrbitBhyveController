@@ -48,7 +48,7 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 
 **Instructions**
 
-1. Using the 'Update from REPO' button in the 'My SmartApps' SmartThings IDE, check the 'Orbit Bhyve Timer' SmartApp and publish & press Save.  
-2. Using the 'Update from REPO' button in the "My Device Handlers" SmartThings IDE, check the 'Orbit Bhyve Timer Device' and publish & press Save.  ([See GitHub IDE integration](https://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html?highlight=github)) from this STOrbitBhyveController(master) repository to your SmartThings IDE.
+1. Using the 'Update from REPO' button in the 'My SmartApps' SmartThings IDE, check the 'Orbit Bhyve Controller' SmartApp and publish & press Save.  
+2. Using the 'Update from REPO' button in the "My Device Handlers" SmartThings IDE, check both the 'Orbit Bhyve Sprinker Timer' and 'Orbit Bhyve Sprinker Bridge' devices.  Publish & press Save.  ([See GitHub IDE integration](https://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html?highlight=github)) from this STOrbitBhyveController(master) repository to your SmartThings IDE.
 3. Locate the Orbit Bhyve Control app in the MarketPlace/SmartApps/My Apps list and click to launch the smartapp.
 4. Enter your Orbit b•hyve™ username and password to create the integration with SmartThings and b•hyve™.
