@@ -1,5 +1,5 @@
 /*
-* Orbit™ Bhyve Timer
+* Orbit™ B•Hyve™ Controller
 * 2019 (c) SanderSoft™
 *
 * Author:   Kurt Sanders
@@ -16,7 +16,7 @@
 *
 */
 import groovy.time.*
-import java.text.SimpleDateFormat;
+    import java.text.SimpleDateFormat;
 
 // Start Version Information
 def version()   { return ["V1.0", "Original Code Base"] }
@@ -26,7 +26,7 @@ String appVersion()	 { return "1.0" }
 String appModified() { return "2019-02-24" }
 
 definition(
-    name: 		"Orbit Bhyve Timer",
+    name: 		"Orbit Bhyve Controller",
     namespace: 	"kurtsanders",
     author: 	"Kurt@KurtSanders.com",
     description:"Control and monitor your network connected Orbit™ Bhyve Timer anywhere via SmartThings®",
@@ -42,18 +42,41 @@ preferences {
 }
 
 def mainMenu() {
-	def bhyveLoginOK = true
+    def orbitBhyveLoginOK 	= OrbitBhyveLogin()
+    def imageName    		= orbitBhyveLoginOK?getAppImg("icons/success-icon.png"):getAppImg("icons/failure-icon.png")
     dynamicPage(name: "mainMenu",
-                title: "Orbit B•Hyve™ Timer Login Information",
+                title: "Orbit B•Hyve™ Timer Account Login Information",
                 nextPage: orbitBhyveLoginOK?"mainOptions":null,
                 submitOnChange: true,
                 install: false,
                 uninstall: true)
     {
-        section ("Orbit B•Hyve™ Login Information") {
+        if (state?.orbit_api_key) {
+            section {
+                href(name: "Orbit B•Hyve™ Timer Options",
+                     page: "mainOptions",
+                     description: "Complete Orbit B•Hyve™ Options")
+            }
+            section("Orbit B•Hyve™ Information") {
+                paragraph "Your Login Information is Valid"
+                paragraph image : getAppImg(imageName),
+                    title: "Account name: ${state.user_name}",
+                    required: false,
+                    ""
+            }
+        } else {
+            section("Orbit B•Hyve™ Status/Information") {
+                paragraph "Your Login Information is INVALID"
+                paragraph image: getAppImg("icons/failure-icon.png"),
+                    required: false,
+                     title: "$state.statusText",
+                     ""
+            }
+        }
+        section () {
             input ( name    : "username",
                    type     : "enum",
-                   title    : "Select the login?",
+                   title    : "Account userid?",
                    options  : ["kurt@kurtsanders.com", "kurtsanders.myXnetgear.com"],
                    submitOnChange: true,
                    multiple : false,
@@ -61,7 +84,7 @@ def mainMenu() {
                   )
             input ( name    : "password",
                    type     : "enum",
-                   title    : "Select the password?",
+                   title    : "Account password?",
                    options  : ["Apples55", "badpassword"],
                    submitOnChange: true,
                    multiple : false,
@@ -154,19 +177,14 @@ def updated() {
 
 def appTouchHandler(evt="") {
     log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
-    main()
 
-/*
-    if (debugVerbose) {
-        def children = app.getChildDevices()
-        def thisdevice
-        log.debug "SmartApp $app.name has ${children.size()} child devices"
-        thisdevice = children.findAll { it.typeName }.sort { a, b -> a.deviceNetworkId <=> b.deviceNetworkId }.each {
-            log.info "${it} <-> DNI: ${it.deviceNetworkId}"
-        }
+    def children = app.getChildDevices()
+    def thisdevice
+    log.debug "This SmartApp '$app.name' has ${children.size()} timer/hub devices"
+    thisdevice = children.findAll { it.typeName }.sort { a, b -> a.deviceNetworkId <=> b.deviceNetworkId }.each {
+        log.info "${it} <-> DNI: ${it.deviceNetworkId}"
     }
-*/
-
+    main()
 }
 
 def add_bhyve_ChildDevice() {
@@ -176,12 +194,12 @@ def add_bhyve_ChildDevice() {
         try {
             addChildDevice("kurtsanders", DTHName(), DTHDNI(), null, ["name": "My Bhyve Timer", label: "My Bhyve Timer", completedSetup: true])
         } catch(e) {
-            errorVerbose("The Device Handler '${DTHName()}' was not found in your 'My Device Handlers', Error-> '${e}'.  Please install this DTH device in the IDE's 'My Device Handlers'")
+            log.error "The Device Handler '${DTHName()}' was not found in your 'My Device Handlers', Error-> '${e}'.  Please install this DTH device in the IDE's 'My Device Handlers'"
             return false
         }
-        debugVerbose("Success: Added a new device named 'My Bhyve Timer' as ${DTHName()} with DNI: ${DTHDNI()}")
+        log.debug "Success: Added a new device named 'My Bhyve Timer' as ${DTHName()} with DNI: ${DTHDNI()}"
     } else {
-        debugVerbose("Verification: Device exists named 'My Bhyve Timer' as ${DTHName()} with DNI: ${DTHDNI()}")
+        log.debug "Verification: Device exists named 'My Bhyve Timer' as ${DTHName()} with DNI: ${DTHDNI()}"
     }
 }
 def remove_bhyve_ChildDevice() {
@@ -198,76 +216,111 @@ def remove_bhyve_ChildDevice() {
 
 def refresh() {
     log.info "Executing Refresh Routine ID:${random()} at ${timestamp()}"
-	main()
+    main()
 }
 
 def main() {
     log.info "Executing Main Routine ID:${random()} at ${timestamp()}"
+    OrbitGet("devices")
 }
 
-def getByveLogin() {
-    def httpPostStatus = resp
+def OrbitGet(command, device_id=null, mesh_id=null) {
+    def params = [
+        'uri'		: orbitBhyveLoginAPI(),
+        'headers'	: OrbitBhyveLoginHeaders(),
+    ]
+    params.headers << ["orbit-api-key"	: state.orbit_api_key]
+    switch (command) {
+        case 'users':
+        params.path = "${command}/${state.user_id}"
+        break
+        case 'user_feedback':
+        case 'devices':
+        params.path 	= "${command}"
+        params.query 	= ["user_id": state.user_id]
+        break
+        case 'sprinkler_timer_programs':
+        params.path 	= "${command}"
+        params.query	= ["device_id" : device_id]
+        break
+        case 'device_history':
+        case 'zone_reports':
+        case 'watering_events':
+        case 'landscape_descriptions':
+        case 'event_logs':
+        params.path = "${command}/${device_id}"
+        break
+        case 'meshes':
+        params.path = "${command}/${mesh_id}"
+        break
+        default :
+        log.error "Invalid command '${command}' to execute:"
+        return false
+    }
+    //    log.debug "params = ${params}"
+    try {
+        httpGet(params) { resp ->
+            //            log.debug "response data: ${resp.data}"
+            if(resp.status == 200) {
+                resp.data.eachWithIndex { it, index ->
+                    log.info "Device: ${index}"
+                    log.info "last_connected_at: ${it.last_connected_at}"
+                    log.info "name: ${it.name}"
+                    log.info "type: ${it.type}"
+                    log.info "id: ${it.id}"
+                }
+            } else {
+                log.error "Fatal Error Status '${resp.status}' from Orbit B•Hyve™ ${command}.  Data='${resp?.data}' at ${timeString}."
+            }
+        }
+    } catch (e) {
+        log.error "OrbitGet($command): something went wrong: $e"
+    }
+}
+
+def OrbitBhyveLogin() {
     Date now = new Date()
     def timeString = new Date().format('EEE MMM d h:mm:ss a',location.timeZone)
-    def Web_idigi_post  = "https://developer.idigi.com/ws/sci"
-    def Web_postdata 	= '<sci_request version="1.0"><file_system cache="false" syncTimeout="15">\
-    <targets><device id="' + "${state.devid}" + '"/></targets><commands><get_file path="PanelUpdate.txt"/>\
-    <get_file path="DeviceConfiguration.txt"/></commands></file_system></sci_request>'
-	def respParams = [:]
+    log.debug "Start OrbitBhyveLogin() at ${timeString} ============="
+    if ((username==null) || (password==null)) { return false }
     def params = [
-        'uri'			: Web_idigi_post,
-        'headers'		: idigiHeaders(),
-        'body'			: Web_postdata
+        'uri'			: orbitBhyveLoginAPI(),
+        'headers'		: OrbitBhyveLoginHeaders(),
+        'path'			: "session",
+        'body'			: web_postdata()
     ]
-    infoVerbose("Start httpPost =============")
     try {
         httpPost(params) {
             resp ->
-            infoVerbose("httpPost resp.status: ${resp.status}")
-            httpPostStatus = resp
+            if(resp.status == 200) {
+                log.debug "HttpPost Login Request was OK ${resp.status}"
+                state.orbit_api_key = "${resp.data?.orbit_api_key}"
+                state.user_id 		= "${resp.data?.user_id}"
+                state.user_name 	= "${resp.data?.user_name}"
+                state.statusText	= "Success"
+            }
+            else {
+                log.error "Fatal Error Status '${resp.status}' from Orbit B•Hyve™ Login.  Data='${resp.data}' at ${timeString}."
+                state.orbit_api_key = null
+                state.user_id 		= null
+                state.user_name 	= null
+                state.statusText = "Fatal Error Status '${resp.status}' from Orbit B•Hyve™ Login.  Data='${resp.data}' at ${timeString}."
+                return false
+            }
         }
     }
     catch (Exception e)
     {
-        debugVerbose("Catch HttpPost Error: ${e}")
-        return null
+        log.debug "Catch HttpPost Login Error: ${e}"
+        state.orbit_api_key = null
+        state.user_id 		= null
+        state.user_name 	= null
+        state.statusText = "Fatal Error for Orbit B•Hyve™ Login '${e}'"
+        return false
     }
-    if (httpPostStatus==null) {
-        return null
-    }
-    def resp = httpPostStatus
-    if(resp.status == 200) {
-        debugVerbose("HttpPost Request was OK ${resp.status}")
-        if(resp.data == "Device Not Connected") {
-            errorVerbose("HttpPost Request: ${resp.data}")
-            unschedule()
-            state.statusText = "Spa Fatal Error ${resp.data} at\n${timeString}"
-            state.contact = "open"
-            def message = "Spa Error: ${resp.data}! at ${timeString}."
-            if (phone) {
-                sendSms(phone, message)
-            }
-            return null
-        }
-        else {
-            state.statusText 			= "Spa data refreshed at\n${timeString}"
-            state.contact 				= "closed"
-            state.respdata				= resp.data
-            state.B64decoded 			= resp.data.decodeBase64()
-            B64decoded 					= resp.data.decodeBase64()
-            log.debug "B64decoded: ${state.B64decoded}"
-            // def byte[] B64decoded = B64encoded.decodeBase64()
-            // def hexstring = B64decoded.encodeHex()
-            // log.info "hexstring: ${hexstring}"
-        }
-    }
-    else {
-        errorVerbose("HttpPost Request got http status ${resp.status}")
-        state.statusText = "Spa Fatal Error Http Status ${resp.status} at ${timeString}."
-        return null
-    }
-    infoVerbose("getOnlineData: End")
-    return B64decoded
+    timeString = new Date().format('EEE MMM d h:mm:ss a',location.timeZone)
+    log.debug "OrbitBhyveLogin(): End at ${timeString}"
+    return true
 }
 
 def setScheduler(schedulerFreq) {
@@ -320,11 +373,11 @@ def timestamp() {
 
 def random() {
     def runID = new Random().nextInt(10000)
-//    if (state?.runID == runID as String) {
-//        log.warn "DUPLICATE EXECUTION RUN AVOIDED: Current runID: ${runID} Past runID: ${state?.runID}"
-//        return
-//    }
-//    state.runID = runID
+    //    if (state?.runID == runID as String) {
+    //        log.warn "DUPLICATE EXECUTION RUN AVOIDED: Current runID: ${runID} Past runID: ${state?.runID}"
+    //        return
+    //    }
+    //    state.runID = runID
     return runID
 }
 
@@ -334,13 +387,15 @@ def errorVerbose(String message) {if (errorVerbose){log.info "${message}"}}
 def debugVerbose(String message) {if (debugVerbose){log.info "${message}"}}
 def infoVerbose(String message)  {if (infoVerbose){log.info "${message}"}}
 String appAuthor()	 { return "SanderSoft™" }
-String getAppImg(imgName) { return "https://raw.githubusercontent.com/KurtSanders/STByveOrbitTimer/master/images/$imgName" }
-String DTHName() { return "Bhyve Orbit Timer Device" }
+String getAppImg(imgName) { return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/$imgName" }
+String DTHName() { return "Orbit Bhyve Timer Device" }
 String DTHDNI() { return "orbit-bhyve-${app.id}" }
-Map orbitHeaders() {
+String orbitBhyveLoginAPI() { return "https://api.orbitbhyve.com/v1/" }
+String web_postdata() { return "{\n    \"session\": {\n        \"email\": \"$username\",\n        \"password\": \"$password\"\n    }\n}" }
+Map OrbitBhyveLoginHeaders() {
     return [
-        'UserAgent'		: 'Spa / 48 CFNetwork / 758.5.3 Darwin / 15.6.0',
-        'Cookie'		: 'JSESSIONID = BC58572FF42D65B183B0318CF3B69470; BIGipServerAWS - DC - CC - Pool - 80 = 3959758764.20480.0000',
-        'Authorization'	: 'Basic QmFsYm9hV2F0ZXJJT1NBcHA6azJuVXBSOHIh'
+        'orbit-app-id':'Orbit Support Dashboard',
+        'Content-Type':'application/json'
     ]
 }
+

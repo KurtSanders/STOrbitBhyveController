@@ -1,5 +1,5 @@
 /*
-*  Name:	Orbit B•Hyve™ Device Handler
+*  Name:	Orbit B•Hyve™ Sprinler Timer
 *  Author: Kurt Sanders
 *  Email:	Kurt@KurtSanders.com
 *  Date:	3/2019
@@ -13,14 +13,15 @@
 *  for the specific language governing permissions and limitations under the License.
 *
 */
-def version() { return ["V1.0", "Requires Bhyve Orbit Timer App"] }
+def version() { return ["V1.0", "Requires Bhyve Orbit Controller"] }
 // End Version Information
 import groovy.time.*
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat;
 
 metadata {
-    definition (name: "Orbit Bhyve Timer Device", namespace: "kurtsanders", author: "kurt@kurtsanders.com") {
+    definition (name: "Orbit Bhyve Sprinkler Timer", namespace: "kurtsanders", author: "kurt@kurtsanders.com") {
+        capability "Battery"
         capability "Contact Sensor"
         capability "Refresh"
         capability "Sensor"
@@ -47,6 +48,10 @@ metadata {
                 icon:"https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/icons/broadcast.png",
                 backgroundColor:greenColor
         }
+        standardTile("battery", "device.battery", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Battery\n${currentValue}%'
+	    }
+
         valueTile("schedulerFreq", "schedulerFreq", decoration: "flat", inactiveLabel: false, width: 3, height: 1, wordWrap: true) {
             state "schedulerFreq", label: 'Refresh Every\n${currentValue} min(s)', action:"refresh"
         }
