@@ -21,6 +21,7 @@ This initial version will be updated to allow one to change the B•Hyve operati
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/bhyveIcon.png" width=200><br>
 <a href="https://www.amazon.com/Orbit-B-hyve-21004-Faucet-Compatible/dp/B0758NR8DJ/ref=sr_1_2?s=lawn-garden&ie=UTF8&qid=1519147062&sr=1-2&keywords=bhyve">Amazon™ Orbit b•hyve™ Model 21004</a>
 </p>
+
 2. A supported mobile device with **SmartThings Legacy Client**. *This app will not work in the new Samsung SmartThings App*.  
 
 3. A working knowledge of the SmartThings IDE
