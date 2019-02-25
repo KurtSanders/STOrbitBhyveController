@@ -1,4 +1,4 @@
-# STOrbitBhyveTimer
+# STOrbitBhyveController
 ---
 
 #### Version 1.0
@@ -16,9 +16,9 @@ This initial version will be updated to allow one to change the B•Hyve operati
 
 ## Requirements:
 
-1. One or more Orbit B•Hyve™ timers and Wi-Fi Hubs. 
+1. One or more of the following Orbit B•Hyve™ timers and Wi-Fi Hubs shown below: 
 <p align="center">
-<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/icons/bhyveIcon.png" width=200>
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/bhyveIcon.png" width=200>
 </p>
 2. A supported mobile device with **ST Legacy Client**. *This app will not work in the new Samsung SmartThings App*. 
 3. A working knowledge of the SmartThings IDE
@@ -32,7 +32,7 @@ Create a new SmartThings Repository entry in your SmartThings IDE under 'Setting
 
 | Owner | Name | Branch |
 |------|:-------:|--------|
-| kurtsanders | STOrbitBhyveTimer | master |
+| kurtsanders | STOrbitBhyveController | master |
 
 **Required Files in your SmartThings IDE Repository**
 
@@ -40,8 +40,9 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 
 | IDE Repository    | Filename | Status | Version |
 | :---: | :----------| :---:  | :---:  |
-| My SmartApps      | kurtsanders : Orbit Bhyve Timer | **New**  | 1.0.0 |
-| My Device Handler | kurtsanders : Orbit Bhyve Timer Device | **New** | 1.0.0 |
+| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **New**  | 1.0.0 |
+| My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **New** | 1.0.0 |
+| My Device Handler | kurtsanders : Orbit Bhyve Bridge | **New** | 1.0.0 |
 
 
 **Instructions**
