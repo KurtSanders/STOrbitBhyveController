@@ -5,20 +5,21 @@
  
 ## Description:
 
-A custom SmartThings® SmartApp and Device Handlers (DTH) which provides a connection to ones Orbit B•Hyve™ network attached devices.
-This SmartThings application allows one to **view** the state of their [Orbit B•Hyve™ devices](https://bhyve.orbitonline.com/hosefaucet/).  
+A custom SmartThings® SmartApp and Device Handlers (DTH) which provides a connection to ones Orbit b•hyve™ network attached devices.
+This SmartThings application allows one to **view** the state of their [Orbit b•hyve™ devices](https://bhyve.orbitonline.com/hosefaucet/).  
 
 This initial version will be updated to allow one to change the B•Hyve operating state of the timers in future updates. 
 
-## B•Hyve™ Tile and Details View
+## b•hyve™ Tile and Details View
 
 {Image placed here}
 
 ## Requirements:
 
-1. One or more of the following Orbit B•Hyve™ timers and Wi-Fi Hubs shown below: 
+1. One or more of the following [Orbit b•hyve™ Smart Hose Timer and/or Wi-Fi Hub](https://bhyve.orbitonline.com/hosefaucet/) shown below: 
 <p align="center">
-<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/bhyveIcon.png" width=200>
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/bhyveIcon.png" width=200><br>
+[Orbit b•hyve™ Model 21004](https://www.amazon.com/Orbit-B-hyve-21004-Faucet-Compatible/dp/B0758NR8DJ/ref=sr_1_2?s=lawn-garden&ie=UTF8&qid=1519147062&sr=1-2&keywords=bhyve)<br>
 </p>
 2. A supported mobile device with **ST Legacy Client**. *This app will not work in the new Samsung SmartThings App*. 
 3. A working knowledge of the SmartThings IDE
