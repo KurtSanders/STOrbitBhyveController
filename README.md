@@ -17,11 +17,14 @@ This initial version will be updated to allow one to change the B•Hyve operati
 ## Requirements:
 
 1. One or more of the following [Orbit b•hyve™ Smart Hose Timer and/or Wi-Fi Hub](https://bhyve.orbitonline.com/hosefaucet/) shown below: 
+
 <p align="center">
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/bhyveIcon.png" width=200><br>
 <a href="https://www.amazon.com/Orbit-B-hyve-21004-Faucet-Compatible/dp/B0758NR8DJ/ref=sr_1_2?s=lawn-garden&ie=UTF8&qid=1519147062&sr=1-2&keywords=bhyve">Amazon™ Orbit b•hyve™ Model 21004</a>
 </p>
+
 2. A supported mobile device with **ST Legacy Client**. *This app will not work in the new Samsung SmartThings App*. 
+
 3. A working knowledge of the SmartThings IDE
 	* Installing a SmartApp & DTH from a GitHub repository (see [SmartThings GitHub IDE integration documentation](https://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html?highlight=github) for example instructions and use the Repository Owner, Name and Branch from installation instructions below)
 
