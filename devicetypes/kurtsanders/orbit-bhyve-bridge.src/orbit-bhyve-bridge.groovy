@@ -24,39 +24,43 @@ metadata {
         capability "Contact Sensor"
         capability "Refresh"
         capability "Sensor"
-        capability "Switch"
     }
     tiles(scale: 2) {
-        multiAttributeTile(name:"switch", type:"generic", width:6, height:4, canChangeIcon: true) {
-            tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
-                attributeState("default",label:'${currentValue}')
-            }
-            tileAttribute("contact", key: "SECONDARY_CONTROL") {
-                attributeState("contact", label:'${currentValue}')
-            }
-        }
         // Network Connected Status
         standardTile("contact", "device.contact",  width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-            state "open",   label:'Offline', action:"open",
-                icon: "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/icons/offline.png",
-                backgroundColor:yellowColor
-            state "closed", label:'Online', action:"closed",
-                icon:"https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/icons/broadcast.png",
-                backgroundColor:greenColor
+            state "open",   label:'Offline',
+                icon: "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/icons/offline.png"
+            state "closed", label:'Online',
+                icon:"https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/icons/broadcast.png"
         }
-        valueTile("schedulerFreq", "schedulerFreq", decoration: "flat", inactiveLabel: false, width: 3, height: 1, wordWrap: true) {
-            state "schedulerFreq", label: 'Refresh Every\n${currentValue} min(s)', action:"refresh"
+        valueTile("firmware_version", "device.firmware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Firmware\n${currentValue}'
+        }
+        valueTile("schedulerFreq", "device.schedulerFreq", decoration: "flat", width: 3, height: 1, wordWrap: true) {
+            state "default", label: 'Refresh Every\n${currentValue} min(s)', action:"refresh"
+        }
+        valueTile("lastupdate", "device.lastupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Last Connected\n${currentValue}', action: "refresh"
+        }
+        valueTile("lastSTupdate", "device.lastSTupdate", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}', action: "refresh"
         }
         standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "default", label: 'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
         }
-        main(["switch"])
+        valueTile("statusText", "device.statusText", width: 5, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}', action: "refresh"
+        }
+        main(["contact"])
         details(
             [
-                "switch",
                 "contact",
+                "firmware_version",
+                "refresh",
+                "lastupdate",
+                "lastSTupdate",
                 "schedulerFreq",
-                "refresh"
+                "statusText"
             ]
         )
     }

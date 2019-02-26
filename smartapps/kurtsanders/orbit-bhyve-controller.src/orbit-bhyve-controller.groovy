@@ -160,12 +160,12 @@ def mainOptions() {
 }
 
 def initialize() {
+    add_bhyve_ChildDevice()
     setScheduler(schedulerFreq)
     subscribe(app, appTouchHandler)
 }
 
 def installed() {
-//    add_bhyve_ChildDevice()
     initialize()
 }
 
@@ -191,44 +191,67 @@ def appTouchHandler(evt="") {
     main()
 }
 
-def add_bhyve_ChildDevice() {
-    // add bhyve device
-    if (!getChildDevice(DTHDNI())) {
-        log.debug "Creating a NEW device named 'My Bhyve Timer' as ${DTHName()} with DNI: ${DTHDNI()}"
-        try {
-            addChildDevice("kurtsanders", DTHName(), DTHDNI(), null, ["name": "My Bhyve Timer", label: "My Bhyve Timer", completedSetup: true])
-        } catch(e) {
-            log.error "The Device Handler '${DTHName()}' was not found in your 'My Device Handlers', Error-> '${e}'.  Please install this DTH device in the IDE's 'My Device Handlers'"
-            return false
-        }
-        log.debug "Success: Added a new device named 'My Bhyve Timer' as ${DTHName()} with DNI: ${DTHDNI()}"
-    } else {
-        log.debug "Verification: Device exists named 'My Bhyve Timer' as ${DTHName()} with DNI: ${DTHDNI()}"
-    }
-}
-def remove_bhyve_ChildDevice() {
-    getAllChildDevices().each {
-        log.debug "Deleting bhyve device: ${it.deviceNetworkId}"
-        try {
-            deleteChildDevice(it.deviceNetworkId)
-        }
-        catch (e) {
-            log.debug "${e} deleting the bhyve device: ${it.deviceNetworkId}"
-        }
-    }
-}
-
 def refresh() {
     log.info "Executing Refresh Routine ID:${random()} at ${timestamp()}"
     main()
 }
 
 def main() {
+	def respdata
     log.info "Executing Main Routine ID:${random()} at ${timestamp()}"
-    OrbitGet("devices")
+    respdata = OrbitGet("devices")
+    updateTiles(respdata)
 }
 
+def updateTiles(respdata) {
+    def DTHname = null
+    def DTHid = null
+    def DTHlabel = null
+    def d = null
+    if (respdata) {
+        respdata.eachWithIndex { it, index ->
+            if (typelist().contains(it.type)) {
+                DTHid	= DTHDNI(it.id)
+                DTHname = DTHName(it.type.split(" |-|_").collect{it.capitalize()}.join(" "))
+                DTHlabel = "Bhyve ${it.name}"
+            } else {
+                log.error "Skipping: Unknown b•hyve™ device type ${it.type} for ${it.name}"
+                DTHname = null
+                DTHid = null
+                DTHlabel = null
+            }
+            // Check to add any new bhyve device
+            if (DTHid) {
+                d = getChildDevice(DTHid)
+                if (d) {
+//                    log.info "Device ${d} -> (${index}): ${it.name} is a ${it.type} and last connected at: ${it.last_connected_at}"
+                    d.sendEvent(name:"lastSTupdate", value: tileLastUpdated(), displayed: false)
+                    d.sendEvent(name:"lastupdate", value: Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", it.last_connected_at).format('EEE MMM d, h:mm:ss a'))
+                    d.sendEvent(name:"schedulerFreq", value: schedulerFreq)
+                    d.sendEvent(name:"firmware_version", value: it.firmware_version)
+                    d.sendEvent(name:"contact", value: it.is_connected?"closed":"open")
+                    switch (it.type) {
+                        case 'bridge':
+                        break
+                        default:
+                            d.sendEvent(name:"battery", value: "${it.battery.charging?'Charging -':'Charged -'} ${it.battery.percent}" )
+                            d.sendEvent(name:"switch", value: it.status.run_mode)
+                        break
+                    }
+                }
+            }
+        }
+    }
+}
+
+def tileLastUpdated() {
+    def now = new Date().format('EEE MMM d, h:mm:ss a',location.timeZone)
+    return sprintf("%s Tile Last Refreshed at\n%s","${version()[0]}", now)
+}
+
+
 def OrbitGet(command, device_id=null, mesh_id=null) {
+    def respdata
     def params = [
         'uri'		: orbitBhyveLoginAPI(),
         'headers'	: OrbitBhyveLoginHeaders(),
@@ -264,22 +287,22 @@ def OrbitGet(command, device_id=null, mesh_id=null) {
     //    log.debug "params = ${params}"
     try {
         httpGet(params) { resp ->
-            //            log.debug "response data: ${resp.data}"
+            // log.debug "response data: ${resp.data}"
             if(resp.status == 200) {
-                resp.data.eachWithIndex { it, index ->
-                    log.info "Device: ${index}"
-                    log.info "last_connected_at: ${it.last_connected_at}"
-                    log.info "name: ${it.name}"
-                    log.info "type: ${it.type}"
-                    log.info "id: ${it.id}"
-                }
+                respdata = resp.data
             } else {
                 log.error "Fatal Error Status '${resp.status}' from Orbit B•Hyve™ ${command}.  Data='${resp?.data}' at ${timeString}."
+                return null
             }
         }
     } catch (e) {
         log.error "OrbitGet($command): something went wrong: $e"
+        return null
     }
+    if (command=='devices') {
+        log.info "Found ${respdata.type.count { it==typelist()[0]}} sprinkler hose timer(s) and ${respdata.type.count { it==typelist()[1]}} bridge device(s) in your b•hyve™ account."
+    }
+    return respdata
 }
 
 def OrbitBhyveLogin() {
@@ -385,6 +408,56 @@ def random() {
     return runID
 }
 
+def add_bhyve_ChildDevice() {
+    def DTHname = null
+    def DTHid = null
+    def DTHlabel = null
+    def respdata = OrbitGet("devices")
+    if (respdata) {
+        respdata.eachWithIndex { it, index ->
+            log.info "Device (${index}): ${it.name} is a ${it.type} and last connected at: ${it.last_connected_at}"
+            if (typelist().contains(it.type)) {
+                DTHid	= DTHDNI(it.id)
+                DTHname = DTHName(it.type.split(" |-|_").collect{it.capitalize()}.join(" "))
+                DTHlabel = "Bhyve ${it.name}"
+            } else {
+                log.error "Skipping: Unknown b•hyve™ device type ${it.type} for ${it.name}"
+                DTHname = null
+                DTHid = null
+                DTHlabel = null
+            }
+            // Check to add any new bhyve device
+            if (DTHid) {
+                if (!getChildDevice(DTHid)) {
+                    log.debug "Creating a NEW b•hyve™ '${DTHname}' device as '${DTHlabel}' with DNI: ${DTHid}"
+                    try {
+                        addChildDevice("kurtsanders", DTHname, DTHid, null, ["name": "${DTHlabel}", label: "${DTHlabel}", completedSetup: true])
+                    } catch(e) {
+                        log.error "The Device Handler '${DTHname}' was not found in your 'My Device Handlers', Error-> '${e}'.  Please install this DTH device in the IDE's 'My Device Handlers'"
+                    }
+                    log.debug "Success: Added a new device named '${DTHlabel}' as DTH:'${DTHname}' with DNI:'${DTHid}'"
+                } else {
+                    log.debug "Verification: Device exists named '${DTHlabel}' as DTH:'${DTHname}' with DNI:'${DTHid}'"
+                }
+            }
+        }
+    } else {
+        return false
+    }
+    return true
+}
+
+def remove_bhyve_ChildDevice() {
+    getAllChildDevices().each {
+        log.debug "Deleting b•hyve™ device: ${it.deviceNetworkId}"
+        try {
+            deleteChildDevice(it.deviceNetworkId)
+        }
+        catch (e) {
+            log.debug "${e} deleting the b•hyve™ device: ${it.deviceNetworkId}"
+        }
+    }
+}
 
 // Constant Declarations
 def errorVerbose(String message) {if (errorVerbose){log.info "${message}"}}
@@ -392,8 +465,8 @@ def debugVerbose(String message) {if (debugVerbose){log.info "${message}"}}
 def infoVerbose(String message)  {if (infoVerbose){log.info "${message}"}}
 String appAuthor()	 { return "SanderSoft™" }
 String getAppImg(imgName) { return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/$imgName" }
-String DTHName() { return "Orbit Bhyve" }
-String DTHDNI() { return "orbit-bhyve-" }
+String DTHName(type) { return "Orbit Bhyve ${type}" }
+String DTHDNI(id) { return "orbit-bhyve-${id}" }
 String orbitBhyveLoginAPI() { return "https://api.orbitbhyve.com/v1/" }
 String web_postdata() { return "{\n    \"session\": {\n        \"email\": \"$username\",\n        \"password\": \"$password\"\n    }\n}" }
 Map OrbitBhyveLoginHeaders() {
@@ -402,4 +475,5 @@ Map OrbitBhyveLoginHeaders() {
         'Content-Type':'application/json'
     ]
 }
+List typelist() { return ["sprinkler_timer","bridge"] }
 
