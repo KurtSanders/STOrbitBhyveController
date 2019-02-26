@@ -16,7 +16,7 @@
 *
 */
 import groovy.time.*
-    import java.text.SimpleDateFormat;
+import java.text.SimpleDateFormat;
 
 // Start Version Information
 def version()   { return ["V1.0", "Original Code Base"] }
@@ -79,17 +79,15 @@ def mainMenu() {
         }
         section () {
             input ( name    : "username",
-                   type     : "enum",
+                   type     : "text",
                    title    : "Account userid?",
-                   options  : ["kurt@kurtsanders.com", "kurtsanders.myXnetgear.com"],
                    submitOnChange: true,
                    multiple : false,
                    required : true
                   )
             input ( name    : "password",
-                   type     : "enum",
+                   type     : "password",
                    title    : "Account password?",
-                   options  : ["Apples55", "badpassword"],
                    submitOnChange: true,
                    multiple : false,
                    required : true
