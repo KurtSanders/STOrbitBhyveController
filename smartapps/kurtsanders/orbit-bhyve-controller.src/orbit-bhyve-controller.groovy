@@ -45,6 +45,7 @@ def mainMenu() {
     def orbitBhyveLoginOK = false
     if ( (username) && (password) ) {
         orbitBhyveLoginOK = OrbitBhyveLogin()
+        log.debug "orbitBhyveLoginOK= ${orbitBhyveLoginOK}"
         def respdata = orbitBhyveLoginOK?OrbitGet("devices"):null
     }
     dynamicPage(name: "mainMenu",
@@ -227,22 +228,27 @@ def updateTiles(respdata) {
             if (DTHid) {
                 d = getChildDevice(DTHid)
                 if (d) {
-                    //                    log.info "Device ${d} -> (${index}): ${it.name} is a ${it.type} and last connected at: ${it.last_connected_at}"
+                    log.info "Device ${it.id} -> (${index}): ${it.name} is a ${it.type} and last connected at: ${getMyDateTime(it.last_connected_at)}"
                     d.sendEvent(name:"lastSTupdate", value: tileLastUpdated(), displayed: false)
-                    d.sendEvent(name:"lastupdate", value: getMyDateTime(it.last_connected_at) )
+                    d.sendEvent(name:"lastupdate", value: "${getMyDateTime(it.last_connected_at)}" )
                     d.sendEvent(name:"schedulerFreq", value: schedulerFreq)
                     d.sendEvent(name:"firmware_version", value: it.firmware_version)
                     d.sendEvent(name:"hardware_version", value: it.hardware_version )
                     d.sendEvent(name:"name", value: it.name)
                     d.sendEvent(name:"is_connected", value: it.is_connected?'Online':'Offline')
+                    d.sendEvent(name:"next_start_time", 	value: getMyDateTime(it.status.next_start_time) )
+                    d.sendEvent(name:"next_start_programs", value: it.status.next_start_programs )
                     if (it.type=="sprinkler_timer") {
-                        d.sendEvent(name:"battery", value: "${it.battery.charging?'Charging -':'Charged -'} ${it.battery.percent}" )
+                        d.sendEvent(name:"battery", value: it.battery.percent )
+                        d.sendEvent(name:"batteryCharging", value: it.battery.charging )
                         d.sendEvent(name:"run_mode", value: it.status.run_mode)
+                        d.sendEvent(name:"sprinkler_type", value: it.zones[0].sprinkler_type)
+                        d.sendEvent(name:"rain_delay_started_at", value: "${getMyDateTime(it.status.rain_delay_started_at)}")
+                        def stp = OrbitGet("sprinkler_timer_programs", it.id)
+                        d.sendEvent(name:"start_times", value: stp.start_times[0][0])
                     }
                     if (it.type=="bridge") {
-                        d.sendEvent(name:"next_start_time", 	value: getMyDateTime(it.status.next_start_time) )
-                        d.sendEvent(name:"next_start_programs", value: it.status.next_start_programs )
-                        d.sendEvent(name:"num_stations", value: it.num_stations )
+                        d.sendEvent(name:"num_stations", value: "${it.num_stations}" )
                     }
                 }
             }
@@ -467,8 +473,9 @@ def remove_bhyve_ChildDevice() {
 }
 def getMyDateTime(dt) {
     def dtpattern = dt.contains('Z')?"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'":"yyyy-MM-dd'T'HH:mm:ssX"
+    def rc
     try {
-        def rc = Date.parse(dtpattern, dt).format('EEE MMM d, h:mm:ss a', location.timeZone)
+        rc = Date.parse(dtpattern, dt).format('EEE MMM d, h:mm:ss a', location.timeZone)
     } catch (e) {
         return ""
     }

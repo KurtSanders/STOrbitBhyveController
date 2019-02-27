@@ -18,6 +18,7 @@ def version() { return ["V1.0", "Requires Bhyve Orbit Controller"] }
 import groovy.time.*
 import java.text.DecimalFormat
 import java.text.SimpleDateFormat;
+String getAppImg(imgName) 		{ return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/$imgName" }
 
 metadata {
     definition (name: "Orbit Bhyve Bridge", namespace: "kurtsanders", author: "kurt@kurtsanders.com") {
@@ -42,6 +43,9 @@ metadata {
             state "Offline", label: 'Offline' , backgroundColor: "#e86d13", icon:"st.Health & Wellness.health9"
             state "Online",  label: 'Online' , backgroundColor: "#00a0dc", icon:"st.Health & Wellness.health9"
         }
+        valueTile("icon", "icon", width: 1, height: 1, decoration: "flat") {
+            state "default", icon: getAppImg('icons/bh1.png')
+        }
         valueTile("firmware_version", "device.firmware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Firmware\n${currentValue}'
         }
@@ -55,7 +59,7 @@ metadata {
             state "default", label: 'Last Connected\n${currentValue}', action: "refresh"
         }
         valueTile("lastSTupdate", "device.lastSTupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: '${currentValue}'
+            state "default", label: '${currentValue}', action:"refresh"
         }
         valueTile("name", "device.name", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}'
@@ -69,16 +73,14 @@ metadata {
         valueTile("num_stations", "device.num_stations", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Number Stations\n${currentValue}'
         }
-        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
             state "default", label: 'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
-        }
-        valueTile("statusText", "device.statusText", width: 4, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: '${currentValue}'
         }
         main(["is_connected"])
         details(
             [
                 "is_connected",
+                "icon",
                 "name",
                 "firmware_version",
                 "hardware_version",
@@ -88,7 +90,6 @@ metadata {
                 "lastSTupdate",
                 "num_stations",
                 "schedulerFreq",
-                "statusText",
                 "refresh"
             ]
         )
@@ -99,7 +100,7 @@ def refresh() {
     Date now = new Date()
     def timeString = now.format("EEE MMM dd h:mm:ss a", location.timeZone)
     log.info "==>Refresh Requested from Orbit B•Hyve™ Timer Device, sending refresh() request to parent smartApp"
-    sendEvent(name: "statusText", value: "Cloud Refresh Requested at\n${timeString}...", "displayed":false)
+    sendEvent(name: "lastSTupdate", value: "Cloud Refresh Requested at\n${timeString}...", "displayed":false)
     parent.refresh()
 }
 
