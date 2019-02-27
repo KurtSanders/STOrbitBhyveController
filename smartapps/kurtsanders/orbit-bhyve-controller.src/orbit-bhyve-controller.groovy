@@ -45,6 +45,7 @@ def mainMenu() {
     def orbitBhyveLoginOK = false
     if ( (username) && (password) ) {
         orbitBhyveLoginOK = OrbitBhyveLogin()
+        def respdata = orbitBhyveLoginOK?OrbitGet("devices"):null
     }
     dynamicPage(name: "mainMenu",
                 title: "Orbit B•Hyve™ Timer Account Login Information",
@@ -60,7 +61,7 @@ def mainMenu() {
                     paragraph image : getAppImg("icons/success-icon.png"),
                         title: "Account name: ${state.user_name}",
                         required: false,
-                        ""
+                        state.devices
                 }
                 section {
                     href(name: "Orbit B•Hyve™ Timer Options",
@@ -93,13 +94,16 @@ def mainMenu() {
                    required : true
                   )
         }
-        section ("${app.name} Information") {
-            paragraph image : getAppImg("icons/bhyveIcon.png"),
-                title	    : appAuthor(),
-                    required: false,
-                    "Version: ${version()[0]}\n" +
-                    "Updates: ${version()[1]}"
+        section ("STOrbitBhyveController™ - ${appAuthor()}") {
+            href(name: "hrefVersions",
+                 image: getAppImg("icons/bhyveIcon.png"),
+                 title: "${version()} : ${appModified()}",
+                 required: false,
+                 style:"embedded",
+                 url: githubCodeURL()
+                )
         }
+
     }
 }
 
@@ -161,6 +165,7 @@ def initialize() {
     add_bhyve_ChildDevice()
     setScheduler(schedulerFreq)
     subscribe(app, appTouchHandler)
+    runIn(15, main)
 }
 
 def installed() {
@@ -179,6 +184,8 @@ def updated() {
 
 def appTouchHandler(evt="") {
     log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
+    main()
+    return
 
     def children = app.getChildDevices()
     def thisdevice
@@ -186,7 +193,6 @@ def appTouchHandler(evt="") {
     thisdevice = children.findAll { it.typeName }.sort { a, b -> a.deviceNetworkId <=> b.deviceNetworkId }.each {
         log.info "${it} <-> DNI: ${it.deviceNetworkId}"
     }
-    main()
 }
 
 def refresh() {
@@ -195,9 +201,8 @@ def refresh() {
 }
 
 def main() {
-	def respdata
     log.info "Executing Main Routine ID:${random()} at ${timestamp()}"
-    respdata = OrbitGet("devices")
+    def respdata = OrbitGet("devices")
     updateTiles(respdata)
 }
 
@@ -222,25 +227,29 @@ def updateTiles(respdata) {
             if (DTHid) {
                 d = getChildDevice(DTHid)
                 if (d) {
-//                    log.info "Device ${d} -> (${index}): ${it.name} is a ${it.type} and last connected at: ${it.last_connected_at}"
+                    //                    log.info "Device ${d} -> (${index}): ${it.name} is a ${it.type} and last connected at: ${it.last_connected_at}"
                     d.sendEvent(name:"lastSTupdate", value: tileLastUpdated(), displayed: false)
-                    d.sendEvent(name:"lastupdate", value: Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", it.last_connected_at).format('EEE MMM d, h:mm:ss a'))
+                    d.sendEvent(name:"lastupdate", value: getMyDateTime(it.last_connected_at) )
                     d.sendEvent(name:"schedulerFreq", value: schedulerFreq)
                     d.sendEvent(name:"firmware_version", value: it.firmware_version)
-                    d.sendEvent(name:"contact", value: it.is_connected?"closed":"open")
-                    switch (it.type) {
-                        case 'bridge':
-                        break
-                        default:
-                            d.sendEvent(name:"battery", value: "${it.battery.charging?'Charging -':'Charged -'} ${it.battery.percent}" )
-                            d.sendEvent(name:"switch", value: it.status.run_mode)
-                        break
+                    d.sendEvent(name:"hardware_version", value: it.hardware_version )
+                    d.sendEvent(name:"name", value: it.name)
+                    d.sendEvent(name:"is_connected", value: it.is_connected?'Online':'Offline')
+                    if (it.type=="sprinkler_timer") {
+                        d.sendEvent(name:"battery", value: "${it.battery.charging?'Charging -':'Charged -'} ${it.battery.percent}" )
+                        d.sendEvent(name:"run_mode", value: it.status.run_mode)
+                    }
+                    if (it.type=="bridge") {
+                        d.sendEvent(name:"next_start_time", 	value: getMyDateTime(it.status.next_start_time) )
+                        d.sendEvent(name:"next_start_programs", value: it.status.next_start_programs )
+                        d.sendEvent(name:"num_stations", value: it.num_stations )
                     }
                 }
             }
         }
     }
 }
+
 
 def tileLastUpdated() {
     def now = new Date().format('EEE MMM d, h:mm:ss a',location.timeZone)
@@ -298,7 +307,7 @@ def OrbitGet(command, device_id=null, mesh_id=null) {
         return null
     }
     if (command=='devices') {
-        log.info "Found ${respdata.type.count { it==typelist()[0]}} sprinkler hose timer(s) and ${respdata.type.count { it==typelist()[1]}} bridge device(s) in your b•hyve™ account."
+        state.devices = "Found ${respdata.type.count { it==typelist()[1]}} bridge device(s) and ${respdata.type.count { it==typelist()[0]}} sprinkler hose timer(s) in your Orbit b•hyve™ account."
     }
     return respdata
 }
@@ -429,7 +438,7 @@ def add_bhyve_ChildDevice() {
                 if (!getChildDevice(DTHid)) {
                     log.debug "Creating a NEW b•hyve™ '${DTHname}' device as '${DTHlabel}' with DNI: ${DTHid}"
                     try {
-                        addChildDevice("kurtsanders", DTHname, DTHid, null, ["name": "${DTHlabel}", label: "${DTHlabel}", completedSetup: true])
+                        addChildDevice(DTHnamespace(), DTHname, DTHid, null, ["name": "${DTHlabel}", label: "${DTHlabel}", completedSetup: true])
                     } catch(e) {
                         log.error "The Device Handler '${DTHname}' was not found in your 'My Device Handlers', Error-> '${e}'.  Please install this DTH device in the IDE's 'My Device Handlers'"
                     }
@@ -456,18 +465,30 @@ def remove_bhyve_ChildDevice() {
         }
     }
 }
+def getMyDateTime(dt) {
+    def dtpattern = dt.contains('Z')?"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'":"yyyy-MM-dd'T'HH:mm:ssX"
+    try {
+        def rc = Date.parse(dtpattern, dt).format('EEE MMM d, h:mm:ss a', location.timeZone)
+    } catch (e) {
+        return ""
+    }
+    //    log.debug "${dt} -> dtpattern = ${dtpattern} -> ${rc}"
+    return rc
+}
 
 // Constant Declarations
 def errorVerbose(String message) {if (errorVerbose){log.info "${message}"}}
 def debugVerbose(String message) {if (debugVerbose){log.info "${message}"}}
 def infoVerbose(String message)  {if (infoVerbose){log.info "${message}"}}
-String appAuthor()	 { return "SanderSoft™" }
-String getAppImg(imgName) { return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/$imgName" }
-String DTHName(type) { return "Orbit Bhyve ${type}" }
-String DTHDNI(id) { return "orbit-bhyve-${id}" }
-String orbitBhyveLoginAPI() { return "https://api.orbitbhyve.com/v1/" }
-String web_postdata() { return "{\n    \"session\": {\n        \"email\": \"$username\",\n        \"password\": \"$password\"\n    }\n}" }
-Map OrbitBhyveLoginHeaders() {
+String DTHnamespace()			{ return "kurtsanders" }
+String appAuthor()	 			{ return "SanderSoft™" }
+String githubCodeURL()			{ return "https://github.com/KurtSanders/STOrbitBhyveController#storbitbhyvecontroller"}
+String getAppImg(imgName) 		{ return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/$imgName" }
+String DTHName(type) 			{ return "Orbit Bhyve ${type}" }
+String DTHDNI(id) 				{ return "orbit-bhyve-${id}" }
+String orbitBhyveLoginAPI() 	{ return "https://api.orbitbhyve.com/v1/" }
+String web_postdata() 			{ return "{\n    \"session\": {\n        \"email\": \"$username\",\n        \"password\": \"$password\"\n    }\n}" }
+Map OrbitBhyveLoginHeaders() 	{
     return [
         'orbit-app-id':'Orbit Support Dashboard',
         'Content-Type':'application/json'

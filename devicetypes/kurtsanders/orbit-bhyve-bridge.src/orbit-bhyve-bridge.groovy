@@ -21,46 +21,75 @@ import java.text.SimpleDateFormat;
 
 metadata {
     definition (name: "Orbit Bhyve Bridge", namespace: "kurtsanders", author: "kurt@kurtsanders.com") {
-        capability "Contact Sensor"
         capability "Refresh"
         capability "Sensor"
+
+        attribute "is_connected", "enum", ['Online','Offline']
+        attribute "firmware_version", "string"
+        attribute "hardware_version", "string"
+        attribute "schedulerFreq", "string"
+        attribute "lastupdate", "string"
+        attribute "statusText", "string"
+        attribute "lastSTupdate", "string"
+        attribute "name","string"
+        attribute "next_start_time", "string"
+        attribute "next_start_programs", "string"
+        attribute "num_stations", "number"
     }
     tiles(scale: 2) {
         // Network Connected Status
-        standardTile("contact", "device.contact",  width: 2, height: 2, inactiveLabel: false, decoration: "flat") {
-            state "open",   label:'Offline',
-                icon: "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/icons/offline.png"
-            state "closed", label:'Online',
-                icon:"https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/icons/broadcast.png"
+        standardTile("is_connected", "device.is_connected",  width: 2, height: 2, decoration: "flat" ) {
+            state "Offline", label: 'Offline' , backgroundColor: "#e86d13", icon:"st.Health & Wellness.health9"
+            state "Online",  label: 'Online' , backgroundColor: "#00a0dc", icon:"st.Health & Wellness.health9"
         }
         valueTile("firmware_version", "device.firmware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Firmware\n${currentValue}'
         }
-        valueTile("schedulerFreq", "device.schedulerFreq", decoration: "flat", width: 3, height: 1, wordWrap: true) {
-            state "default", label: 'Refresh Every\n${currentValue} min(s)', action:"refresh"
+        valueTile("hardware_version", "device.hardware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Hardware\n${currentValue}'
+        }
+        valueTile("schedulerFreq", "device.schedulerFreq", decoration: "flat", width: 2, height: 1, wordWrap: true) {
+            state "default", label: 'Refresh Every\n${currentValue} min(s)'
         }
         valueTile("lastupdate", "device.lastupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Last Connected\n${currentValue}', action: "refresh"
         }
-        valueTile("lastSTupdate", "device.lastSTupdate", width: 3, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: '${currentValue}', action: "refresh"
+        valueTile("lastSTupdate", "device.lastSTupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}'
+        }
+        valueTile("name", "device.name", width: 4, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}'
+        }
+        valueTile("next_start_time", "device.next_start_time", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Next Start Time\n${currentValue}'
+        }
+        valueTile("next_start_programs", "device.next_start_programs", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Next Start Pgm\n${currentValue}'
+        }
+        valueTile("num_stations", "device.num_stations", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Number Stations\n${currentValue}'
         }
         standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "default", label: 'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
         }
-        valueTile("statusText", "device.statusText", width: 5, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: '${currentValue}', action: "refresh"
+        valueTile("statusText", "device.statusText", width: 4, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}'
         }
-        main(["contact"])
+        main(["is_connected"])
         details(
             [
-                "contact",
+                "is_connected",
+                "name",
                 "firmware_version",
-                "refresh",
+                "hardware_version",
+                "next_start_time",
+                "next_start_programs",
                 "lastupdate",
                 "lastSTupdate",
+                "num_stations",
                 "schedulerFreq",
-                "statusText"
+                "statusText",
+                "refresh"
             ]
         )
     }
