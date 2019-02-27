@@ -53,7 +53,7 @@ metadata {
             state "default", icon: getAppImg('icons/ht25.png')
         }
         valueTile("name", "device.name", width: 4, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: '${currentValue}'
+            state "default", label: 'Sprinkler Name\n${currentValue}'
         }
         valueTile("firmware_version", "device.firmware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Firmware\n${currentValue}'
@@ -79,7 +79,7 @@ metadata {
         valueTile("lastSTupdate", "device.lastSTupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}', action:"refresh"
         }
-        valueTile("next_start_time", "device.next_start_time", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("next_start_time", "device.next_start_time", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Next Start Time\n${currentValue}'
         }
         valueTile("start_times", "device.start_times", width: 2, height: 1, decoration: "flat", wordWrap: true) {

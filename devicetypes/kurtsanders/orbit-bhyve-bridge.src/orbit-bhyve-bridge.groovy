@@ -64,13 +64,13 @@ metadata {
         valueTile("name", "device.name", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}'
         }
-        valueTile("next_start_time", "device.next_start_time", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("next_start_time", "device.next_start_time", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Next Start Time\n${currentValue}'
         }
         valueTile("next_start_programs", "device.next_start_programs", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Next Start Pgm\n${currentValue}'
         }
-        valueTile("num_stations", "device.num_stations", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("num_stations", "device.num_stations", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Number Stations\n${currentValue}'
         }
         standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
