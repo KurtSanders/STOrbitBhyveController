@@ -245,7 +245,9 @@ def updateTiles(respdata) {
                         d.sendEvent(name:"sprinkler_type", value: it.zones[0].sprinkler_type)
                         d.sendEvent(name:"rain_delay_started_at", value: "${getMyDateTime(it.status.rain_delay_started_at)}")
                         def stp = OrbitGet("sprinkler_timer_programs", it.id)
-                        d.sendEvent(name:"start_times", value: "${stp.start_times[0][0]} for ${stp.run_times[0][0].run_time} mins")
+                        if (stp) {
+                            d.sendEvent(name:"start_times", value: "${stp?.start_times[0][0]} for ${stp?.run_times[0][0].run_time} mins")
+                        }
                     }
                     if (it.type=="bridge") {
                         d.sendEvent(name:"num_stations", value: "${it.num_stations}" )
