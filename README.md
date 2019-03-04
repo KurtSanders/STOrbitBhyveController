@@ -12,8 +12,10 @@ This initial version will be updated to allow one to change the B•Hyve operati
 
 ## b•hyve™ Tile and Details View
 
-{Image placed here}
-
+<p align="center">
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/Screen-HoseTimer1.PNG" width=200>
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/Screen-WiFiHub1.PNG" width=200>
+</p>
 ## Requirements:
 
 1. One or more of the following [Orbit b•hyve™ Smart Hose Timer and/or Wi-Fi Hub](https://bhyve.orbitonline.com/hosefaucet/) shown below: 
