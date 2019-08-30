@@ -21,6 +21,14 @@ This SmartThings application allows one to **view** the state of their [Orbit b�
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/Screen-HoseTimer1.PNG" width=200>
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/Screen-WiFiHub1.PNG" width=200>
 </p>
+
+### Action Tiles Integtgration
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/bhve action tiles.gif">
+</p>
+
+
 ## Requirements:
 
 1. One or more of the following [Orbit b•hyve™ Smart Hose Timer and/or Wi-Fi Hub](https://bhyve.orbitonline.com/hosefaucet/) shown below: 
