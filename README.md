@@ -1,12 +1,12 @@
 # STOrbitBhyveController
-*SmartThings® Integration for Ambient Weather® Stations by SanderSoft™*
+#### * SmartThings® Integration for the b•hyve™ hose faucet timers *
 ### Version: 2.0 (Production Master Branch - Testing)
-<img src="https://raw.githubusercontent.com/KurtSanders/STAmbientWeather/master/images/readme.png" width="50">[Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/readme.png" width="50">[Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
 
 ---
 
-### *The version provides support for showing 'On/Off' Bhyve Status*
-	* WebCore can be used to trap and act on On/Off, Rain Delay, etc events
+#### *The version provides support for showing 'On/Off' Bhyve Status and SMS/Push Messages*
+	* WebCore™ can be used to detect and act on device switch On/Off, Rain Delay, etc events
 
 ### Description:
 
@@ -61,3 +61,9 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 2. Using the 'Update from REPO' button in the "My Device Handlers" SmartThings IDE, check both the 'Orbit Bhyve Sprinker Timer' and 'Orbit Bhyve Sprinker Bridge' devices.  Publish & press Save.  ([See GitHub IDE integration](https://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html?highlight=github)) from this STOrbitBhyveController(master) repository to your SmartThings IDE.
 3. Locate the Orbit Bhyve Control app in the MarketPlace/SmartApps/My Apps list and click to launch the smartapp.
 4. Enter your Orbit b•hyve™ username and password to create the integration with SmartThings and b•hyve™.
+
+**Known Issues & Limitations**
+
+1. On/Off switch detection and device updates are controlled by the user polling frequency setting in the SmartApp user preferences.  Please do not set the polling to be excessive.
+2. API is not functional in the v2 version.
+3. The SmartApp v2 cannot activate a b•hyve™ hose faucet timer, or length of water duration.  These functions must be done either manually at the b•hyve™ hose faucet timer, or through the b•hyve™ mobile App. 
