@@ -5,8 +5,8 @@
 
 ---
 
-#### *The version provides support for showing 'On/Off' Bhyve Status and SMS/Push Messages*
-	* WebCore™ can be used to detect and act on device switch On/Off, Rain Delay, etc events
+#### *The version provides support for showing 'open' or 'closed' Bhyve Status and SMS/Push Messages*
+	* WebCore™ can be used to detect and act on device valve 'open' or 'closed', Rain Delay, etc events
 
 ### Description:
 
@@ -66,6 +66,6 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 
 **Known Issues & Limitations**
 
-1. On/Off switch watering detection and device updates are controlled by the user polling frequency setting in the SmartApp user preferences.  Please do not set the polling to be excessive.
+1. 'open' or 'closed' valve attribute watering detection and device updates are controlled by the user polling frequency setting in the SmartApp user preferences.  Please do not set the polling to be excessive.
 2. The Enable API for the SmartApp is not functional in the v2 version. A future release will incorporate the ability to activate the b•hyve™ hose faucet timer from the SmartThings SmartApp.
 3. The Orbit b•hyve™ Controller SmartApp v2 cannot activate a b•hyve™ hose faucet timer, or length of water duration from the SmartApp.  These controller functions must be done either manually at the b•hyve™ hose faucet timer, or through the b•hyve™ mobile App. 
