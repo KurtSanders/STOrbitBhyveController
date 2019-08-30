@@ -61,9 +61,11 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 2. Using the 'Update from REPO' button in the "My Device Handlers" SmartThings IDE, check both the 'Orbit Bhyve Sprinker Timer' and 'Orbit Bhyve Sprinker Bridge' devices.  Publish & press Save.  ([See GitHub IDE integration](https://docs.smartthings.com/en/latest/tools-and-ide/github-integration.html?highlight=github)) from this STOrbitBhyveController(master) repository to your SmartThings IDE.
 3. Locate the Orbit Bhyve Control app in the MarketPlace/SmartApps/My Apps list and click to launch the smartapp.
 4. Enter your Orbit b•hyve™ username and password to create the integration with SmartThings and b•hyve™.
+5. Configure SmartApp prefernces.
+6. Save and add devices to a SmartThings room.
 
 **Known Issues & Limitations**
 
-1. On/Off switch detection and device updates are controlled by the user polling frequency setting in the SmartApp user preferences.  Please do not set the polling to be excessive.
-2. API is not functional in the v2 version.
-3. The SmartApp v2 cannot activate a b•hyve™ hose faucet timer, or length of water duration.  These functions must be done either manually at the b•hyve™ hose faucet timer, or through the b•hyve™ mobile App. 
+1. On/Off switch watering detection and device updates are controlled by the user polling frequency setting in the SmartApp user preferences.  Please do not set the polling to be excessive.
+2. The Enable API for the SmartApp is not functional in the v2 version. A future release will incorporate the ability to activate the b•hyve™ hose faucet timer from the SmartThings SmartApp.
+3. The Orbit b•hyve™ Controller SmartApp v2 cannot activate a b•hyve™ hose faucet timer, or length of water duration from the SmartApp.  These controller functions must be done either manually at the b•hyve™ hose faucet timer, or through the b•hyve™ mobile App. 
