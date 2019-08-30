@@ -19,11 +19,11 @@ import groovy.time.*
 import java.text.SimpleDateFormat;
 
 // Start Version Information
-def version()   { return ["V2.0", "On/Off Device Status & Monitoring"] }
+def version()   { return ["V2.01", "On/Off Device Status & Monitoring"] }
 // End Version Information
 
-String appVersion()	 { return "2.0" }
-String appModified() { return "2019-29-21" }
+String appVersion()	 { return "2.01" }
+String appModified() { return "2019-08-30" }
 
 definition(
     name: 		"Orbit Bhyve Controller",
@@ -340,9 +340,7 @@ def updateDevices(id,switchstatus,level) {
 def appTouchHandler(evt="") {
     log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
 //        log.info  "${it} <-> DNI: ${it.deviceNetworkId}"
-    prettyTimeStamp()
-    return
-    allDeviceStatus()
+//    allDeviceStatus()
     main()
 }
 
@@ -393,6 +391,7 @@ def updateTiles(respdata) {
     def banner
     def watering_events
     def watering_volume_gal
+    def wateringTimeLeft
     if (respdata) {
         respdata.eachWithIndex { it, index ->
             if (typelist().contains(it.type)) {
@@ -458,14 +457,18 @@ def updateTiles(respdata) {
                             d.sendEvent(name:"next_start_time", value: "${durationFromNow(it?.status?.next_start_time)}", displayed: false)
                             banner = "Next Start: ${getMyDateTime(it?.status?.next_start_time)}"
                         }
+                        watering_events = OrbitGet('watering_events', it.id).first()
                         if (byhveTimerOnOffState=='on') {
-                            watering_events = OrbitGet('watering_events', it.id).first()
+//                            log.debug "watering_events = ${watering_events}"
+//                            log.debug "Start_Time Level = ${getMyDateTime(watering_events?.irrigation?.start_time[0])}"
+//                            log.debug "Mins Left: ${durationFromNow(watering_events?.irrigation?.start_time[0])}"
                             watering_volume_gal = watering_events?.irrigation?.water_volume_gal[0]
-                            log.debug "watering_volume_gal = ${watering_volume_gal}"
                             d.sendEvent(name: "water_volume_gal", value: watering_volume_gal)
-                            banner ="Watering ${watering_volume_gal} gal/min at ${timestamp('short') }"
+                            d.sendEvent(name:"level", value: watering_events?.irrigation?.run_time[0] )
+                            banner ="Active Watering - ${watering_volume_gal} gals at ${timestamp('short') }"
                         } else {
                             d.sendEvent(name:"water_volume_gal", value: 0 )
+                            d.sendEvent(name:"level", value: watering_events?.irrigation?.run_time[0] )
                         }
                         d.sendEvent(name:"banner", value: banner, displayed: false )
                         break
@@ -481,7 +484,8 @@ def updateTiles(respdata) {
     }
 }
 
-def durationFromNow(dt) {
+def durationFromNow(dt=null) {
+    if(dt == null){return ""}
     def dtpattern = dt.contains('Z')?"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'":"yyyy-MM-dd'T'HH:mm:ssX"
     def endDate
     def rc
@@ -534,7 +538,6 @@ def OrbitGet(command, device_id=null, mesh_id=null) {
         params.path 	= "${command}"
         params.query	= ["device_id" : device_id]
         break
-        case 'device_history':
         case 'zone_reports':
         case 'watering_events':
         case 'landscape_descriptions':

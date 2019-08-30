@@ -13,7 +13,7 @@
 *  for the specific language governing permissions and limitations under the License.
 *
 */
-def version() { return ["V2.0", "Requires Bhyve Orbit Timer Controller"] }
+def version() { return ["V2.01", "Requires Bhyve Orbit Timer Controller"] }
 // End Version Information
 
 import groovy.time.*
@@ -63,15 +63,16 @@ metadata {
             tileAttribute("banner", key: "SECONDARY_CONTROL") {
                 attributeState("default", label:'${currentValue}')
             }
-            /*
             tileAttribute("device.level", key: "SLIDER_CONTROL") {
                 attributeState "level", action:"switch level.setLevel", defaultState: true
+//                attributeState "level", action:"switch level.setLevel", defaultState: true
             }
+            /*
             tileAttribute("updown", key: "VALUE_CONTROL") {
                 attributeState "VALUE_UP", action: "setLevelUp"
                 attributeState "VALUE_DOWN", action: "setLevelDown"
-            }
-            */
+            } */
+
         }
         standardTile("switch", "device.switch", width: 2, height: 2) {
             state "on", 		label:'${currentValue}', icon:"st.Outdoor.outdoor16", backgroundColor:"#44b621"
@@ -135,7 +136,7 @@ metadata {
             state "default", label: 'Next Start Pgm\n${currentValue}'
         }
         valueTile("water_volume_gal", "device.water_volume_gal", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Flow Rate\n${currentValue} gal/min'
+            state "default", label: 'Gallons Used\n${currentValue}'
         }
         standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
             state "default", label: 'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
