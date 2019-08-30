@@ -22,7 +22,7 @@ This SmartThings application allows one to **view** the state of their [Orbit bâ
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/Screen-WiFiHub1.PNG" width=200>
 </p>
 
-### Action Tiles Integtgration
+### Action Tiles Integration
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/bhve action tiles.gif">
