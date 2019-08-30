@@ -1,6 +1,6 @@
 # STOrbitBhyveController
 #### * SmartThings® Integration for the b•hyve™ hose faucet timers *
-### Version: 2.0 (Production Master Branch - Testing)
+### Version: 2.02 (Production Master Branch - Stable)
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/readme.png" width="50">[Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
 
 ---
@@ -58,8 +58,8 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 
 | IDE Repository    | Filename | Status |
 | :---: | :----------| :---:  |
-| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **Updated V2** |
-| My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **Updated V2** |
+| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **Updated V2.02** |
+| My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **Updated V2.02** |
 | My Device Handler | kurtsanders : Orbit Bhyve Bridge | UnChanged from V1 |
 
 
