@@ -19,10 +19,10 @@ import groovy.time.*
 import java.text.SimpleDateFormat;
 
 // Start Version Information
-def version()   { return ["V2.01", "On/Off Device Status & Monitoring"] }
+def version()   { return ["V2.02", "On/Off Device Status & Monitoring"] }
 // End Version Information
 
-String appVersion()	 { return "2.01" }
+String appVersion()	 { return "2.02" }
 String appModified() { return "2019-08-30" }
 
 definition(
@@ -297,41 +297,41 @@ def webRequest() {
         return allDeviceStatus()
         break
         case "updatedevices":
-        log.debug "Params: ${params.id}, ${params.switch}, ${params.level}"
-        updateDevices(params.id, params.switch, params.level )
+        log.debug "Params: ${params.id}, ${params.valve}, ${params.level}"
+        updateDevices(params.id, params.valve, params.level )
         break
         default:
-            httpError(400, "$command is not a valid command for all switches specified")
+            httpError(400, "$command is not a valid command for all valves specified")
     }
     return
 }
 
-def updateDevices(id,switchstatus,level) {
+def updateDevices(id,valvestatus,level) {
     return
 
-    // all switches have the command
+    // all valves have the command
     // execute the command on all switches
     // (note we can do this on the array - the command will be invoked on every element
     switch(command) {
-        case "on":
-        log.debug "switches.on()"
+        case "open":
+        log.debug "valves.open()"
         break
-        case "off":
-        log.debug "switches.off()"
+        case "closed":
+        log.debug "valves.closed()"
         break
         default:
-            httpError(400, "$command is not a valid command for all switches specified")
+            httpError(400, "$command is not a valid command for all valves specified")
     }
     return
 
-    switches.each {
+    valves.each {
         if(it.id == command)
         {
-            log.debug "Found switch ${it.displayName} with id ${it.id} with current value ${it.currentSwitch}"
-            if(it.currentSwitch == "on")
-            it.off()
+            log.debug "Found valve ${it.displayName} with id ${it.id} with current value ${it.currentValve}"
+            if(it.currentValve == "closed")
+            it.closed()
             else
-                it.on()
+                it.open()
             return
         }
     }
@@ -364,7 +364,7 @@ def allDeviceStatus() {
             resp << [
                 'deviceNetworkId': it.deviceNetworkId,
                 'name'			: it.name,
-                'switch'		: d.latestValue('switch'),
+                'valve'			: d.latestValue('valve'),
                 'switchlevel'	: d.latestValue('level')
             ]
         }
@@ -420,9 +420,9 @@ def updateTiles(respdata) {
                     d.sendEvent(name:"type", value: it?.type, displayed: false )
                     switch (it.type) {
                         case "sprinkler_timer":
-                        byhveTimerOnOffState = it?.status.watering_status?"on":"off"
-                        if ( d.latestValue("switch") != byhveTimerOnOffState ) {
-                            d.sendEvent(name:"switch", value: byhveTimerOnOffState )
+                        byhveTimerOnOffState = it?.status.watering_status?"open":"closed"
+                        if ( d.latestValue("valve") != byhveTimerOnOffState ) {
+                            d.sendEvent(name:"valve", value: byhveTimerOnOffState )
                             message = "Orbit Byhve Timer: The ${it.name} has changed to '${byhveTimerOnOffState.toUpperCase()}' at ${timestamp()}!"
                             if (sendPush) {
                                 sendPush(message)
@@ -458,7 +458,7 @@ def updateTiles(respdata) {
                             banner = "Next Start: ${getMyDateTime(it?.status?.next_start_time)}"
                         }
                         watering_events = OrbitGet('watering_events', it.id).first()
-                        if (byhveTimerOnOffState=='on') {
+                        if (byhveTimerOnOffState=='open') {
 //                            log.debug "watering_events = ${watering_events}"
 //                            log.debug "Start_Time Level = ${getMyDateTime(watering_events?.irrigation?.start_time[0])}"
 //                            log.debug "Mins Left: ${durationFromNow(watering_events?.irrigation?.start_time[0])}"

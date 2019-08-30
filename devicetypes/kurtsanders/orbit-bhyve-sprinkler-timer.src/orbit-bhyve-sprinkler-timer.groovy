@@ -26,8 +26,8 @@ metadata {
         capability "Refresh"
         capability "Sensor"
         capability "Battery"
-        capability "Switch"
         capability "Switch Level"
+        capability "Valve"
 
         attribute "is_connected", "enum", ['Online','Offline']
         attribute "firmware_version", "string"
@@ -53,12 +53,40 @@ metadata {
         command "setLevelDown"
     }
     tiles(scale: 2) {
-        multiAttributeTile(name:"bigswitchtile", type:"generic", width:6, height:4, canChangeIcon: false ) {
-            tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+        multiAttributeTile(name:"bigtile", type:"generic", width:6, height:4, canChangeIcon: false ) {
+            tileAttribute("device.valve", key: "PRIMARY_CONTROL") {
+                attributeState "default",
+                    label:'',
+                    icon:"st.valves.water.closed",
+                    backgroundColor:"#00a0dc"
+                attributeState "closing",
+                    label:'Closing',
+//                    action: "valve.open",
+                    icon:"st.valves.water.closed",
+                    backgroundColor:"#f1d801"
+                attributeState "closed",
+                    label:'Closed',
+//                    action: "valve.open",
+                    icon:"st.valves.water.closed",
+                    backgroundColor:"#00a0dc",
+                    nextState: "opening"
+                attributeState "opening",
+                    label:'Opening',
+//                    action: "valve.close",
+                    icon:"st.valves.water.open",
+                    backgroundColor:"#f1d801"
+                attributeState "open",
+                    label:'Open',
+//                    action: "valve.close",
+                    icon:"st.valves.water.open",
+                    backgroundColor:"#44b621",
+                    nextState: "closing"
+                /*
                 attributeState "on", label:'${name}', backgroundColor:"#44b621", nextState:"turningOff"
                 attributeState "off", label:'${name}', backgroundColor:"#00a0dc", nextState:"turningOn"
                 attributeState "turningOn", label:'${name}', backgroundColor:"#f1d801", nextState:"turningOff"
                 attributeState "turningOff", label:'${name}', backgroundColor:"#f1d801", nextState:"turningOn"
+                */
             }
             tileAttribute("banner", key: "SECONDARY_CONTROL") {
                 attributeState("default", label:'${currentValue}')
@@ -74,16 +102,16 @@ metadata {
             } */
 
         }
-        standardTile("switch", "device.switch", width: 2, height: 2) {
-            state "on", 		label:'${currentValue}', icon:"st.Outdoor.outdoor16", backgroundColor:"#44b621"
-            state "off", 		label:'${currentValue}', icon:"st.Outdoor.outdoor16", backgroundColor:"#00a0dc"
         /*
-            state "on", 		label:'${currentValue}', action:"switch.off", icon:"st.Outdoor.outdoor16", backgroundColor:"#44b621", nextState:"turningOff"
-            state "off", 		label:'${currentValue}', action:"switch.on",  icon:"st.Outdoor.outdoor16", backgroundColor:"#00a0dc", nextState:"turningOn"
-            state "turningOn", 	label:'${currentValue}', action:"switch.off", icon:"st.Outdoor.outdoor16", backgroundColor:"#f1d801", nextState:"turningOff"
-            state "turningOff", label:'${currentValue}', action:"switch.on",  icon:"st.Outdoor.outdoor16", backgroundColor:"#f1d801", nextState:"turningOn"
-            */
+        standardTile("valve", "device.valve", width: 2, height: 2) {
+            state "open", 		label:'${currentValue}', icon:"st.valves.water.open", backgroundColor:"#44b621"
+            state "closed", 	label:'${currentValue}', icon:"st.valves.water.closed", backgroundColor:"#00a0dc"
+            state "open", 			label:'${currentValue}', action:"valve.closed", icon:"st.Outdoor.outdoor16", backgroundColor:"#44b621", nextState:"closing"
+            state "closed", 		label:'${currentValue}', action:"valve.open",  icon:"st.Outdoor.outdoor16", backgroundColor:"#00a0dc", nextState:"opening"
+            state "opening", 		label:'${currentValue}', action:"valve.closed", icon:"st.Outdoor.outdoor16", backgroundColor:"#f1d801", nextState:"closing"
+            state "closing", 		label:'${currentValue}', action:"valve.open",  icon:"st.Outdoor.outdoor16", backgroundColor:"#f1d801", nextState:"opening"
         }
+        */
         // Network Connected Status , icon: getAppImg('icons/ht25.png')
         standardTile("is_connected", "device.is_connected",  width: 2, height: 2, decoration: "flat" ) {
             state "Offline", label: 'Offline' , backgroundColor: "#e86d13", icon:"st.Health & Wellness.health9"
@@ -123,7 +151,7 @@ metadata {
         valueTile("lastupdate", "device.lastupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'b•hyve™ last connected at\n${currentValue}', action: "refresh"
         }
-        valueTile("lastSTupdate", "device.lastSTupdate", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("lastSTupdate", "device.lastSTupdate", width: 5, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}', action:"refresh"
         }
         valueTile("next_start_time", "device.next_start_time", width: 3, height: 1, decoration: "flat", wordWrap: true) {
@@ -138,17 +166,16 @@ metadata {
         valueTile("water_volume_gal", "device.water_volume_gal", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Gallons Used\n${currentValue}'
         }
-        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 2) {
             state "default", label: 'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
         }
-        main(["switch"])
+        main(["bigtile"])
         details(
             [
-                "bigswitchtile",
-                "switch",
+                "bigtile",
+                "water_volume_gal",
                 "icon",
                 "is_connected",
-                "water_volume_gal",
                 "battery",
                 "name",
                 "next_start_time",
@@ -156,13 +183,13 @@ metadata {
                 "start_times",
                 "presetRuntime",
                 "run_mode",
-                "firmware_version",
-                "lastupdate",
-                "hardware_version",
-                "sprinkler_type",
-                "next_start_programs",
-                "lastSTupdate",
                 "schedulerFreq",
+                "next_start_programs",
+                "sprinkler_type",
+                "hardware_version",
+                "lastupdate",
+                "lastSTupdate",
+                "firmware_version",
                 "refresh"
             ]
         )
@@ -180,19 +207,19 @@ def refresh() {
 
 def installed() {
 	log.info "Orbit B•Hyve™ Sprinkler Timer Device Installed with default timer on time of 10 minutes"
-    sendEvent(name: "switch", value: "off")
+    sendEvent(name: "valve", value: "closed")
     sendEvent(name: "level", value: 10)
     sendEvent(name: "updown", value: 10)
 }
 
 def on() {
     log.info "Orbit B•Hyve™ Device level is now ON"
-    sendEvent(name: "switch", value: "on")
+    sendEvent(name: "valve", value: "open")
 }
 
 def off() {
     log.info "Orbit B•Hyve™ Device is now OFF"
-    sendEvent(name: "switch", value: "off")
+    sendEvent(name: "valve", value: "closed")
 }
 
 def setLevel(level, rate = null) {
