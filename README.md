@@ -1,18 +1,23 @@
 # STOrbitBhyveController
+*SmartThings® Integration for Ambient Weather® Stations by SanderSoft™*
+### Version: 2.0 (Production Master Branch - Testing)
+<img src="https://raw.githubusercontent.com/KurtSanders/STAmbientWeather/master/images/readme.png" width="50">[Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
+
 ---
 
-#### Version 1.0
- 
-## Description:
+### *The version provides support for showing 'On/Off' Bhyve Status*
+	* WebCore can be used to trap and act on On/Off, Rain Delay, etc events
+
+### Description:
 
 A custom SmartThings® SmartApp and Device Handlers (DTH) which provides a connection to ones Orbit b•hyve™ network attached devices.
 This SmartThings application allows one to **view** the state of their [Orbit b•hyve™ devices](https://bhyve.orbitonline.com/hosefaucet/).  
 
-This initial version will be updated to allow one to change the B•Hyve operating state of the timers in future updates. 
 
-## b•hyve™ Tile and Details View
+### SmartThings Room Tile and Details View
 
 <p align="center">
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/Screen-HoseTimer0.PNG" width=200>
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/Screen-HoseTimer1.PNG" width=200>
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/Screen-WiFiHub1.PNG" width=200>
 </p>
@@ -43,11 +48,11 @@ Create a new SmartThings Repository entry in your SmartThings IDE under 'Setting
 
 You will need to use 'Update from Repo' to install into your SmartThings IDE repository:
 
-| IDE Repository    | Filename | Status | Version |
-| :---: | :----------| :---:  | :---:  |
-| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **New**  | 1.0 |
-| My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **New** | 1.0 |
-| My Device Handler | kurtsanders : Orbit Bhyve Bridge | **New** | 1.0 |
+| IDE Repository    | Filename | Status |
+| :---: | :----------| :---:  |
+| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **Updated V2** |
+| My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **Updated V2** |
+| My Device Handler | kurtsanders : Orbit Bhyve Bridge | UnChanged from V1 |
 
 
 **Instructions**

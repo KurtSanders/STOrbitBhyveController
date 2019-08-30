@@ -19,11 +19,11 @@ import groovy.time.*
 import java.text.SimpleDateFormat;
 
 // Start Version Information
-def version()   { return ["V1.0", "Original Code Base"] }
+def version()   { return ["V2.0", "On/Off Device Status & Monitoring"] }
 // End Version Information
 
-String appVersion()	 { return "1.0" }
-String appModified() { return "2019-02-24" }
+String appVersion()	 { return "2.0" }
+String appModified() { return "2019-29-21" }
 
 definition(
     name: 		"Orbit Bhyve Controller",
@@ -39,6 +39,9 @@ definition(
 preferences {
     page(name:"mainMenu")
     page(name:"mainOptions")
+    page(name:"APIPage")
+    page(name:"enableAPIPage")
+    page(name:"disableAPIPage")
 }
 
 def mainMenu() {
@@ -114,6 +117,9 @@ def mainOptions() {
                 install: true,
                 uninstall: false)
     {
+        section("API Setup") {
+            href name: "APIPageLink", title: "API Setup", description: "", page: "APIPage"
+        }
         section("Spa Refresh Update Interval") {
             input ( name: "schedulerFreq",
                    type: "enum",
@@ -126,10 +132,15 @@ def mainOptions() {
                   required: false
                  )
         }
-        section("Bhyve Notifications") {
+        section("SMS & Push Notifications for Timer On/Off activity?") {
+            input ( name    : "sendPush",
+                   type     : "bool",
+                   title    : "Send Mobile Client Push Notification? (optional)",
+                   required : false
+                  )
             input ( name	: "phone",
                    type		: "phone",
-                   title	: "Text Messages for Alerts (optional)",
+                   title	: "Send SMS Text Messages (optional)",
                    description: "Mobile Phone Number",
                    required: false
                   )
@@ -162,11 +173,77 @@ def mainOptions() {
     }
 }
 
+def disableAPIPage() {
+	dynamicPage(name: "disableAPIPage", title: "", uninstall:false, install:false) {
+		section() {
+			if (state.endpoint) {
+				try {
+					revokeAccessToken()
+				}
+				catch (e) {
+					log.debug "Unable to revoke access token: $e"
+				}
+				state.endpoint = null
+			}
+			paragraph "It has been done. Your token has been REVOKED. You're no longer allowed in API Town (I mean, you can always have a new token). Tap Done to continue."
+		}
+	}
+}
+
+def APIPage() {
+    dynamicPage(name: "APIPage", title: "", uninstall:false, install:false) {
+        section("API Setup") {
+            if (state.endpoint) {
+                // Added additional logging from @kurtsanders
+                log.info "##########################################################################################"
+                log.info "secret=${state.endpointSecret}"
+                log.info "smartAppURL=${state.endpointURL}"
+                log.info "##########################################################################################"
+                log.info "The API has been setup. Please enter the next two strings exactly as shown into the .env file which is in your Raspberry Pi's Bhyve app directory."
+                log.info "##########################################################################################"
+                paragraph "API has been setup. Please enter the following two strings in your '.env' file in your Raspberry Pi bhyve directory."
+                paragraph "smartAppURL=${state.endpointURL}"
+                paragraph "secret=${state.endpointSecret}"
+                href "disableAPIPage", title: "Disable API (Only use this if you want to generate a new secret)", description: ""
+            }
+            else {
+                paragraph "Required: The API has not been setup. Tap below to enable it."
+                href name: "enableAPIPageLink", title: "Enable API", description: "", page: "enableAPIPage"
+            }
+        }
+    }
+}
+
+def enableAPIPage() {
+    dynamicPage(name: "enableAPIPage",title: "", uninstall:false, install:false) {
+        section() {
+            if (initializeAppEndpoint()) {
+                // Added additional logging from @kurtsanders
+                log.info "##########################################################################################"
+                log.info "secret=${state.endpointSecret}"
+                log.info "smartAppURL=${state.endpointURL}"
+                log.info "##########################################################################################"
+                log.info "The API has been setup. Please enter the next two strings exactly as shown into the .env file which is in your Raspberry Pi's Bhyve app directory."
+                log.info "##########################################################################################"
+                paragraph "Woo hoo! The API is now enabled and will be displayed in the next screen and posted in the ST Live Logging window after you save this SmartApp. Tap Done to continue"
+            }
+            else {
+                paragraph "It looks like OAuth is not enabled. Please login to your SmartThings IDE, click the My SmartApps menu item, click the 'Edit Properties' button for the BitBar Output App. Then click the OAuth section followed by the 'Enable OAuth in Smart App' button. Click the Update button and BAM you can finally tap Done here.", title: "Looks like we have to enable OAuth still", required: true, state: null
+            }
+        }
+    }
+}
+
 def initialize() {
     add_bhyve_ChildDevice()
     setScheduler(schedulerFreq)
     subscribe(app, appTouchHandler)
     runIn(15, main)
+}
+
+def updated() {
+    unsubscribe()
+    initialize()
 }
 
 def installed() {
@@ -176,29 +253,126 @@ def installed() {
 def uninstalled() {
     log.info "Removing ${app.name}..."
     remove_bhyve_ChildDevice()
+    if (state.endpoint) {
+        try {
+            log.debug "Revoking API access token"
+            revokeAccessToken()
+        }
+        catch (e) {
+            log.warn "Unable to revoke API access token: $e"
+        }
+    }
     log.info "Good-Bye..."
 }
-def updated() {
-    unsubscribe()
-    initialize()
+
+mappings {
+    path("/json") {
+        action: [
+            POST: "jsonRequest"
+        ]
+    }
+    path("/:command") {
+        action: [
+            GET: "webRequest"
+        ]
+    }
+}
+
+def jsonRequest() {
+    def data = request.JSON
+
+    log.debug "json data: ${data}"
+//    data.each{ k, v ->
+//        log.debug "${k}:${v}"
+//    }
+    return allDeviceStatus()
+}
+
+
+def webRequest() {
+    def command = params.command
+    log.debug "command = ${command}"
+    switch(command) {
+        case "listdevices":
+        return allDeviceStatus()
+        break
+        case "updatedevices":
+        log.debug "Params: ${params.id}, ${params.switch}, ${params.level}"
+        updateDevices(params.id, params.switch, params.level )
+        break
+        default:
+            httpError(400, "$command is not a valid command for all switches specified")
+    }
+    return
+}
+
+def updateDevices(id,switchstatus,level) {
+    return
+
+    // all switches have the command
+    // execute the command on all switches
+    // (note we can do this on the array - the command will be invoked on every element
+    switch(command) {
+        case "on":
+        log.debug "switches.on()"
+        break
+        case "off":
+        log.debug "switches.off()"
+        break
+        default:
+            httpError(400, "$command is not a valid command for all switches specified")
+    }
+    return
+
+    switches.each {
+        if(it.id == command)
+        {
+            log.debug "Found switch ${it.displayName} with id ${it.id} with current value ${it.currentSwitch}"
+            if(it.currentSwitch == "on")
+            it.off()
+            else
+                it.on()
+            return
+        }
+    }
 }
 
 def appTouchHandler(evt="") {
     log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
-    main()
+//        log.info  "${it} <-> DNI: ${it.deviceNetworkId}"
+    prettyTimeStamp()
     return
-
-    def children = app.getChildDevices()
-    def thisdevice
-    log.debug "This SmartApp '$app.name' has ${children.size()} timer/hub devices"
-    thisdevice = children.findAll { it.typeName }.sort { a, b -> a.deviceNetworkId <=> b.deviceNetworkId }.each {
-        log.info "${it} <-> DNI: ${it.deviceNetworkId}"
-    }
+    allDeviceStatus()
+    main()
 }
 
 def refresh() {
     log.info "Executing Refresh Routine ID:${random()} at ${timestamp()}"
     main()
+}
+
+def allDeviceStatus() {
+    //    log.debug "allDeviceStatus(): Start Routine"
+    def children = app.getChildDevices()
+    def thisdevice
+    def d
+    def resp = []
+    def map = []
+    def id
+    //    log.debug "This SmartApp '$app.name' has ${children.size()} b•hyve™ devices"
+    thisdevice = children.findAll { it.typeName }.sort { a, b -> a.deviceNetworkId <=> b.deviceNetworkId }.each {
+        d = getChildDevice(it.deviceNetworkId)
+        if(d.latestValue('type')=="sprinkler_timer") {
+            resp << [
+                'deviceNetworkId': it.deviceNetworkId,
+                'name'			: it.name,
+                'switch'		: d.latestValue('switch'),
+                'switchlevel'	: d.latestValue('level')
+            ]
+        }
+    }
+    //    log.debug "Raw ${resp}"
+    return resp
 }
 
 def main() {
@@ -212,6 +386,13 @@ def updateTiles(respdata) {
     def DTHid = null
     def DTHlabel = null
     def d = null
+    def rainDelayHrs
+    def rainDelayDT
+    def byhveTimerOnOffState
+    def message
+    def banner
+    def watering_events
+    def watering_volume_gal
     if (respdata) {
         respdata.eachWithIndex { it, index ->
             if (typelist().contains(it.type)) {
@@ -228,29 +409,71 @@ def updateTiles(respdata) {
             if (DTHid) {
                 d = getChildDevice(DTHid)
                 if (d) {
-                    log.info "Device ${it.id} -> (${index}): ${it.name} is a ${it.type} and last connected at: ${getMyDateTime(it.last_connected_at)}"
+//                    log.info "Device ${it.id} -> (${index}): ${it.name} is a ${it.type} and last connected at: ${getMyDateTime(it.last_connected_at)}"
                     d.sendEvent(name:"lastSTupdate", value: tileLastUpdated(), displayed: false)
-                    d.sendEvent(name:"lastupdate", value: "${getMyDateTime(it.last_connected_at)}" )
-                    d.sendEvent(name:"schedulerFreq", value: schedulerFreq)
-                    d.sendEvent(name:"firmware_version", value: it.firmware_version)
-                    d.sendEvent(name:"hardware_version", value: it.hardware_version )
-                    d.sendEvent(name:"name", value: it.name)
-                    d.sendEvent(name:"is_connected", value: it.is_connected?'Online':'Offline')
-                    d.sendEvent(name:"next_start_time", 	value: getMyDateTime(it.status.next_start_time) )
-                    d.sendEvent(name:"next_start_programs", value: it.status.next_start_programs )
-                    if (it.type=="sprinkler_timer") {
-                        d.sendEvent(name:"battery", value: it.battery.percent )
-                        d.sendEvent(name:"batteryCharging", value: it.battery.charging )
-                        d.sendEvent(name:"run_mode", value: it.status.run_mode)
-                        d.sendEvent(name:"sprinkler_type", value: it.zones[0].sprinkler_type)
-                        d.sendEvent(name:"rain_delay_started_at", value: "${getMyDateTime(it.status.rain_delay_started_at)}")
+                    d.sendEvent(name:"lastupdate", value: "${getMyDateTime(it.last_connected_at)}", displayed: false )
+                    d.sendEvent(name:"schedulerFreq", value: schedulerFreq, displayed: false)
+                    d.sendEvent(name:"firmware_version", value: it?.firmware_version, displayed: false)
+                    d.sendEvent(name:"hardware_version", value: it?.hardware_version, displayed: false )
+                    d.sendEvent(name:"name", value: it?.name, displayed: false)
+                    d.sendEvent(name:"is_connected", value: it?.is_connected?'Online':'Offline')
+                    d.sendEvent(name:"next_start_programs", value: it?.status?.next_start_programs, displayed: false )
+                    d.sendEvent(name:"type", value: it?.type, displayed: false )
+                    switch (it.type) {
+                        case "sprinkler_timer":
+                        byhveTimerOnOffState = it?.status.watering_status?"on":"off"
+                        if ( d.latestValue("switch") != byhveTimerOnOffState ) {
+                            d.sendEvent(name:"switch", value: byhveTimerOnOffState )
+                            message = "Orbit Byhve Timer: The ${it.name} has changed to '${byhveTimerOnOffState.toUpperCase()}' at ${timestamp()}!"
+                            if (sendPush) {
+                                sendPush(message)
+                            }
+                            if (phone) {
+                                sendSms(phone, message)
+                            }
+                        }
+                        d.sendEvent(name:"battery", value: it?.battery?.percent )
+                        d.sendEvent(name:"presetRuntime", value: it?.manual_preset_runtime_sec/60, displayed: false )
+                        d.sendEvent(name:"rain_delay", value: it?.rain_delay )
+                        d.sendEvent(name:"batteryCharging", value: it?.battery.charging, displayed: false )
+                        d.sendEvent(name:"run_mode", value: it.status?.run_mode, displayed: false)
+                        d.sendEvent(name:"sprinkler_type", value: it?.zones[0].sprinkler_type, displayed: false)
+
                         def stp = OrbitGet("sprinkler_timer_programs", it.id)
                         if (stp) {
-                            d.sendEvent(name:"start_times", value: "${stp?.start_times[0][0]} for ${stp?.run_times[0][0].run_time} mins")
+                            d.sendEvent(name:"start_times", value: "${stp?.start_times[0][0]} for ${stp?.run_times[0][0].run_time} mins", displayed: false)
                         }
-                    }
-                    if (it.type=="bridge") {
-                        d.sendEvent(name:"num_stations", value: "${it.num_stations}" )
+                        if (it?.status?.rain_delay > 0) {
+                            rainDelayHrs = it?.status?.rain_delay?:0
+                            rainDelayDT = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it?.status?.next_start_time)
+                            use (TimeCategory) {
+                                rainDelayDT = (rainDelayDT + rainDelayHrs.hours).format('EEE MMM d, h:mm a', location.timeZone).replace("AM", "am").replace("PM","pm")
+                            }
+                            d.sendEvent(name:"rain_icon", value: "rain", displayed: false )
+                            d.sendEvent(name:"next_start_time", value: rainDelayDT + " Rain Delay", displayed: false )
+                            banner = "Next Start: ${rainDelayDT} Rain Delay"
+                        } else {
+                            d.sendEvent(name:"rain_icon", value: "sun", displayed: false )
+//                            d.sendEvent(name:"next_start_time", value: getMyDateTime(it?.status?.next_start_time) )
+                            d.sendEvent(name:"next_start_time", value: "${durationFromNow(it?.status?.next_start_time)}", displayed: false)
+                            banner = "Next Start: ${getMyDateTime(it?.status?.next_start_time)}"
+                        }
+                        if (byhveTimerOnOffState=='on') {
+                            watering_events = OrbitGet('watering_events', it.id).first()
+                            watering_volume_gal = watering_events?.irrigation?.water_volume_gal[0]
+                            log.debug "watering_volume_gal = ${watering_volume_gal}"
+                            d.sendEvent(name: "water_volume_gal", value: watering_volume_gal)
+                            banner ="Watering ${watering_volume_gal} gal/min at ${timestamp('short') }"
+                        } else {
+                            d.sendEvent(name:"water_volume_gal", value: 0 )
+                        }
+                        d.sendEvent(name:"banner", value: banner, displayed: false )
+                        break
+                        case "bridge":
+                        d.sendEvent(name:"num_stations", value: "${it?.num_stations}", displayed: false )
+                        break
+                        default:
+                            log.error "Unknown Orbit b-hyve device type: '${it.type}'"
                     }
                 }
             }
@@ -258,12 +481,38 @@ def updateTiles(respdata) {
     }
 }
 
-
-def tileLastUpdated() {
-    def now = new Date().format('EEE MMM d, h:mm:ss a',location.timeZone)
-    return sprintf("%s Tile Last Refreshed at\n%s","${version()[0]}", now)
+def durationFromNow(dt) {
+    def dtpattern = dt.contains('Z')?"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'":"yyyy-MM-dd'T'HH:mm:ssX"
+    def endDate
+    def rc
+    try {
+        endDate = Date.parse(dtpattern, dt)
+    } catch (e) {
+        return "durationFromNow(dt): Error converting ${dt}: ${e}"
+    }
+    use (TimeCategory) {
+        def now = new Date()
+        rc = ((endDate - now) =~ /(.+)\b,/)[0][1]
+    }
+    return rc
 }
 
+
+def tileLastUpdated() {
+    return sprintf("%s Tile Last Refreshed at\n%s","${version()[0]}", timestamp())
+}
+
+def timestamp(type='long') {
+    def formatstring = 'EEE MMM d, h:mm:ss a'
+    if (type == 'short') {
+        formatstring = 'h:mm:ss a'
+    }
+    Date datenow = new Date()
+    def tf = new java.text.SimpleDateFormat(formatstring)
+    def loc = getTwcLocation()?.location
+    tf.setTimeZone(TimeZone.getTimeZone(loc.ianaTimeZone))
+    return tf.format(datenow).replace("AM", "am").replace("PM","pm")
+}
 
 def OrbitGet(command, device_id=null, mesh_id=null) {
     def respdata
@@ -405,14 +654,6 @@ def setScheduler(schedulerFreq) {
 
 }
 
-def timestamp() {
-    Date datenow = new Date()
-    def tf = new java.text.SimpleDateFormat('EEE MMM d h:mm:ss a')
-    def loc = getTwcLocation()?.location
-    tf.setTimeZone(TimeZone.getTimeZone(loc.ianaTimeZone))
-    return tf.format(datenow)
-}
-
 def random() {
     def runID = new Random().nextInt(10000)
     //    if (state?.runID == runID as String) {
@@ -450,9 +691,9 @@ def add_bhyve_ChildDevice() {
                     } catch(e) {
                         log.error "The Device Handler '${DTHname}' was not found in your 'My Device Handlers', Error-> '${e}'.  Please install this DTH device in the IDE's 'My Device Handlers'"
                     }
-                    log.debug "Success: Added a new device named '${DTHlabel}' as DTH:'${DTHname}' with DNI:'${DTHid}'"
+//                    log.debug "Success: Added a new device named '${DTHlabel}' as DTH:'${DTHname}' with DNI:'${DTHid}'"
                 } else {
-                    log.debug "Verification: Device exists named '${DTHlabel}' as DTH:'${DTHname}' with DNI:'${DTHid}'"
+//                    log.debug "Verification: Device exists named '${DTHlabel}' as DTH:'${DTHname}' with DNI:'${DTHid}'"
                 }
             }
         }
@@ -477,11 +718,10 @@ def getMyDateTime(dt) {
     def dtpattern = dt.contains('Z')?"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'":"yyyy-MM-dd'T'HH:mm:ssX"
     def rc
     try {
-        rc = Date.parse(dtpattern, dt).format('EEE MMM d, h:mm:ss a', location.timeZone)
+        rc = Date.parse(dtpattern, dt).format('EEE MMM d, h:mm a', location.timeZone).replace("AM", "am").replace("PM","pm")
     } catch (e) {
         return ""
     }
-    //    log.debug "${dt} -> dtpattern = ${dtpattern} -> ${rc}"
     return rc
 }
 
@@ -494,7 +734,7 @@ String appAuthor()	 			{ return "SanderSoft™" }
 String githubCodeURL()			{ return "https://github.com/KurtSanders/STOrbitBhyveController#storbitbhyvecontroller"}
 String getAppImg(imgName) 		{ return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/$imgName" }
 String DTHName(type) 			{ return "Orbit Bhyve ${type}" }
-String DTHDNI(id) 				{ return "orbit-bhyve-${id}" }
+String DTHDNI(id) 				{ return "bhyve${id}" }
 String orbitBhyveLoginAPI() 	{ return "https://api.orbitbhyve.com/v1/" }
 String web_postdata() 			{ return "{\n    \"session\": {\n        \"email\": \"$username\",\n        \"password\": \"$password\"\n    }\n}" }
 Map OrbitBhyveLoginHeaders() 	{
@@ -504,4 +744,21 @@ Map OrbitBhyveLoginHeaders() 	{
     ]
 }
 List typelist() { return ["sprinkler_timer","bridge"] }
+
+private initializeAppEndpoint() {
+	if (!state.endpoint) {
+		try {
+			def accessToken = createAccessToken()
+			if (accessToken) {
+				state.endpoint = apiServerUrl("/api/token/${accessToken}/smartapps/installations/${app.id}/")
+                state.endpointURL = apiServerUrl("/api/smartapps/installations/${app.id}/")
+                state.endpointSecret = accessToken
+			}
+		}
+		catch(e) {
+			state.endpoint = null
+		}
+	}
+	return state.endpoint
+}
 

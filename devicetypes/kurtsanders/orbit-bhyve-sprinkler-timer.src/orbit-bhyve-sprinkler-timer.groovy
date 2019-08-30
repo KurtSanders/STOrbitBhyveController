@@ -13,10 +13,12 @@
 *  for the specific language governing permissions and limitations under the License.
 *
 */
-def version() { return ["V1.0", "Requires Bhyve Orbit Controller"] }
+def version() { return ["V2.0", "Requires Bhyve Orbit Timer Controller"] }
 // End Version Information
+
 import groovy.time.*
 import java.text.SimpleDateFormat;
+
 String getAppImg(imgName) 		{ return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/$imgName" }
 
 metadata {
@@ -24,6 +26,8 @@ metadata {
         capability "Refresh"
         capability "Sensor"
         capability "Battery"
+        capability "Switch"
+        capability "Switch Level"
 
         attribute "is_connected", "enum", ['Online','Offline']
         attribute "firmware_version", "string"
@@ -33,7 +37,6 @@ metadata {
         attribute "statusText", "string"
         attribute "lastSTupdate", "string"
         attribute "name","string"
-        attribute "rain_delay_started_at", "string"
         attribute "sprinkler_type", "string"
         attribute "next_start_time", "string"
         attribute "next_start_programs", "string"
@@ -41,19 +44,59 @@ metadata {
         attribute "next_start_time", "string"
         attribute "next_start_programs", "string"
         attribute "start_times", "string"
-        attribute "num_stations", "number"
+        attribute "rain_icon", "string"
+        attribute "presetRuntime", "number"
+        attribute "updown", "number"
+        attribute "water_volume_gal", "number"
+
+        command "setLevelUp"
+        command "setLevelDown"
     }
     tiles(scale: 2) {
+        multiAttributeTile(name:"bigswitchtile", type:"generic", width:6, height:4, canChangeIcon: false ) {
+            tileAttribute("device.switch", key: "PRIMARY_CONTROL") {
+                attributeState "on", label:'${name}', backgroundColor:"#44b621", nextState:"turningOff"
+                attributeState "off", label:'${name}', backgroundColor:"#00a0dc", nextState:"turningOn"
+                attributeState "turningOn", label:'${name}', backgroundColor:"#f1d801", nextState:"turningOff"
+                attributeState "turningOff", label:'${name}', backgroundColor:"#f1d801", nextState:"turningOn"
+            }
+            tileAttribute("banner", key: "SECONDARY_CONTROL") {
+                attributeState("default", label:'${currentValue}')
+            }
+            /*
+            tileAttribute("device.level", key: "SLIDER_CONTROL") {
+                attributeState "level", action:"switch level.setLevel", defaultState: true
+            }
+            tileAttribute("updown", key: "VALUE_CONTROL") {
+                attributeState "VALUE_UP", action: "setLevelUp"
+                attributeState "VALUE_DOWN", action: "setLevelDown"
+            }
+            */
+        }
+        standardTile("switch", "device.switch", width: 2, height: 2) {
+            state "on", 		label:'${currentValue}', icon:"st.Outdoor.outdoor16", backgroundColor:"#44b621"
+            state "off", 		label:'${currentValue}', icon:"st.Outdoor.outdoor16", backgroundColor:"#00a0dc"
+        /*
+            state "on", 		label:'${currentValue}', action:"switch.off", icon:"st.Outdoor.outdoor16", backgroundColor:"#44b621", nextState:"turningOff"
+            state "off", 		label:'${currentValue}', action:"switch.on",  icon:"st.Outdoor.outdoor16", backgroundColor:"#00a0dc", nextState:"turningOn"
+            state "turningOn", 	label:'${currentValue}', action:"switch.off", icon:"st.Outdoor.outdoor16", backgroundColor:"#f1d801", nextState:"turningOff"
+            state "turningOff", label:'${currentValue}', action:"switch.on",  icon:"st.Outdoor.outdoor16", backgroundColor:"#f1d801", nextState:"turningOn"
+            */
+        }
         // Network Connected Status , icon: getAppImg('icons/ht25.png')
         standardTile("is_connected", "device.is_connected",  width: 2, height: 2, decoration: "flat" ) {
             state "Offline", label: 'Offline' , backgroundColor: "#e86d13", icon:"st.Health & Wellness.health9"
             state "Online",  label: 'Online'  , backgroundColor: "#00a0dc", icon:"st.Health & Wellness.health9"
         }
-        valueTile("icon", "icon", width: 1, height: 1, decoration: "flat") {
-            state "default", icon: getAppImg('icons/ht25.png')
+        standardTile("icon", "refresh", width: 2, height: 2, decoration: "flat") {
+            state "default", action:"refresh.refresh", icon: getAppImg('icons/ht25.jpg')
         }
-        valueTile("name", "device.name", width: 4, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Sprinkler Name\n${currentValue}'
+        standardTile("rain_icon", "rain_icon", width: 1, height: 1, decoration: "flat") {
+            state "sun",   icon:"st.custom.wuk.clear"
+            state "rain",  icon:"st.custom.wu1.chancerain", backgroundColor: "#44b621"
+        }
+        valueTile("name", "device.name", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Timer Name\n${currentValue}'
         }
         valueTile("firmware_version", "device.firmware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Firmware\n${currentValue}'
@@ -64,52 +107,59 @@ metadata {
         valueTile("battery", "device.battery", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Battery\n${currentValue}%'
         }
-        valueTile("run_mode", "device.run_mode", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("presetRuntime", "device.presetRuntime", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Preset Runtime\n${currentValue} mins'
+        }
+        valueTile("run_mode", "device.run_mode", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Run Mode\n${currentValue}'
         }
         valueTile("sprinkler_type", "device.sprinkler_type", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Sprinkler Type\n${currentValue}'
         }
         valueTile("schedulerFreq", "device.schedulerFreq", decoration: "flat", width: 2, height: 1, wordWrap: true) {
-            state "default", label: 'Refresh Every\n${currentValue} min(s)'
+            state "default", label: 'Refresh Auto\n${currentValue} min(s)'
         }
         valueTile("lastupdate", "device.lastupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'b•hyve™ last connected at\n${currentValue}', action: "refresh"
         }
-        valueTile("lastSTupdate", "device.lastSTupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("lastSTupdate", "device.lastSTupdate", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}', action:"refresh"
         }
-        valueTile("next_start_time", "device.next_start_time", width: 4, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Next Start Time\n${currentValue}'
+        valueTile("next_start_time", "device.next_start_time", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Duration to Start\n${currentValue}'
         }
-        valueTile("start_times", "device.start_times", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("start_times", "device.start_times", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Freq Start Time\n${currentValue}'
         }
-        valueTile("rain_delay_started_at", "device.rain_delay_started_at", width: 3, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Rain Delay Started at\n${currentValue}'
-        }
-        valueTile("next_start_programs", "device.next_start_programs", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("next_start_programs", "device.next_start_programs", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Next Start Pgm\n${currentValue}'
+        }
+        valueTile("water_volume_gal", "device.water_volume_gal", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Flow Rate\n${currentValue} gal/min'
         }
         standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
             state "default", label: 'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
         }
-        main(["is_connected"])
+        main(["switch"])
         details(
             [
-                "is_connected",
+                "bigswitchtile",
+                "switch",
                 "icon",
-                "name",
-                "start_times",
-                "run_mode",
+                "is_connected",
+                "water_volume_gal",
                 "battery",
-                "sprinkler_type",
+                "name",
+                "next_start_time",
+                "rain_icon",
+                "start_times",
+                "presetRuntime",
+                "run_mode",
                 "firmware_version",
                 "lastupdate",
                 "hardware_version",
-                "next_start_time",
+                "sprinkler_type",
                 "next_start_programs",
-                "rain_delay_started_at",
                 "lastSTupdate",
                 "schedulerFreq",
                 "refresh"
@@ -121,11 +171,43 @@ metadata {
 def refresh() {
     Date now = new Date()
     def timeString = now.format("EEE MMM dd h:mm:ss a", location.timeZone)
-    log.info "==>Refresh Requested from Orbit B•Hyve™ Timer Device, sending refresh() request to parent smartApp"
+    log.info "Manual Refresh Requested from Orbit B•Hyve™ Timer Device, sending refresh() request to parent smartApp"
     sendEvent(name: "lastSTupdate", value: "Cloud Refresh Requested at\n${timeString}...", "displayed":false)
+    sendEvent(name: "banner", value: "Cloud Refresh Requested..", "displayed":false)
     parent.refresh()
 }
 
 def installed() {
-	log.info "Orbit B•Hyve™ Sprinkler Timer Device Installed"
+	log.info "Orbit B•Hyve™ Sprinkler Timer Device Installed with default timer on time of 10 minutes"
+    sendEvent(name: "switch", value: "off")
+    sendEvent(name: "level", value: 10)
+    sendEvent(name: "updown", value: 10)
+}
+
+def on() {
+    log.info "Orbit B•Hyve™ Device level is now ON"
+    sendEvent(name: "switch", value: "on")
+}
+
+def off() {
+    log.info "Orbit B•Hyve™ Device is now OFF"
+    sendEvent(name: "switch", value: "off")
+}
+
+def setLevel(level, rate = null) {
+    log.info "Orbit B•Hyve™ Sprinkler Timer Device level was ${device.latestValue("level")} and is now ${level}"
+    sendEvent(name: "level", value: level)
+    sendEvent(name: "updown", value: level)
+}
+
+def setLevelUp() {
+    def levelState = device.latestValue("level")
+    log.info "Orbit B•Hyve™ Sprinkler Timer Device level was ${levelState} and is now ${levelState + 1}"
+	setLevel(levelState+1)
+}
+
+def setLevelDown() {
+    def levelState = device.latestValue("level")
+    log.info "Orbit B•Hyve™ Sprinkler Timer Device level was ${levelState} and is now ${levelState - 1}"
+	setLevel(levelState-1)
 }
