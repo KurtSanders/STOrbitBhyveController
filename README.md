@@ -1,11 +1,11 @@
 # STOrbitBhyveController
 #### * SmartThings® Integration for the b•hyve™ hose faucet timers *
-### Version: 2.02 (Production Master Branch - Stable)
+### Version: 2.03 (Production Master Branch - Stable)
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/readme.png" width="50">[Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
 
 ---
 
-#### *The version provides support for showing 'open' or 'closed' Bhyve Status and SMS/Push Messages*
+##### *This new version provides support for showing 'open' or 'closed' Bhyve Status and SMS/Push Messages*
 	* WebCore™ can be used to detect and act on device valve 'open' or 'closed', Rain Delay, etc events
 
 ### Description:

@@ -19,11 +19,11 @@ import groovy.time.*
 import java.text.SimpleDateFormat;
 
 // Start Version Information
-def version()   { return ["V2.02", "On/Off Device Status & Monitoring"] }
+def version()   { return ["V2.03", "Valve Open/Close Device Status & Monitoring"] }
 // End Version Information
 
-String appVersion()	 { return "2.02" }
-String appModified() { return "2019-08-30" }
+String appVersion()	 { return "2.03" }
+String appModified() { return "2019-08-31" }
 
 definition(
     name: 		"Orbit Bhyve Controller",
@@ -453,21 +453,18 @@ def updateTiles(respdata) {
                             banner = "Next Start: ${rainDelayDT} Rain Delay"
                         } else {
                             d.sendEvent(name:"rain_icon", value: "sun", displayed: false )
-//                            d.sendEvent(name:"next_start_time", value: getMyDateTime(it?.status?.next_start_time) )
                             d.sendEvent(name:"next_start_time", value: "${durationFromNow(it?.status?.next_start_time)}", displayed: false)
                             banner = "Next Start: ${getMyDateTime(it?.status?.next_start_time)}"
                         }
                         watering_events = OrbitGet('watering_events', it.id).first()
                         if (byhveTimerOnOffState=='open') {
-//                            log.debug "watering_events = ${watering_events}"
-//                            log.debug "Start_Time Level = ${getMyDateTime(watering_events?.irrigation?.start_time[0])}"
-//                            log.debug "Mins Left: ${durationFromNow(watering_events?.irrigation?.start_time[0])}"
-                            watering_volume_gal = watering_events?.irrigation?.water_volume_gal[0]
-                            d.sendEvent(name: "water_volume_gal", value: watering_volume_gal)
-                            d.sendEvent(name:"level", value: watering_events?.irrigation?.run_time[0] )
-                            banner ="Active Watering - ${watering_volume_gal} gals at ${timestamp('short') }"
+                            d.sendEvent(name:"power", value: watering_events?.irrigation?.water_volume_gal[0], descriptionText:"${watering_events?.irrigation?.water_volume_gal[0]} gallons")
+//                            d.sendEvent(name:"level", value: watering_events?.irrigation?.run_time[0] )
+                            wateringTimeLeft = durationFromNow(it?.status?.next_start_time, true)
+                            d.sendEvent(name:"level", value: wateringTimeLeft, descriptionText: "${wateringTimeLeft} minutes left till end" )
+                            banner ="Active Watering - ${watering_events?.irrigation?.water_volume_gal[0]} gals at ${timestamp('short') }"
                         } else {
-                            d.sendEvent(name:"water_volume_gal", value: 0 )
+                            d.sendEvent(name:"power", value: 0, descriptionText:"Gallons", displayed: false )
                             d.sendEvent(name:"level", value: watering_events?.irrigation?.run_time[0] )
                         }
                         d.sendEvent(name:"banner", value: banner, displayed: false )
@@ -484,11 +481,12 @@ def updateTiles(respdata) {
     }
 }
 
-def durationFromNow(dt=null) {
+def durationFromNow(dt=null,mins=false) {
     if(dt == null){return ""}
     def dtpattern = dt.contains('Z')?"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'":"yyyy-MM-dd'T'HH:mm:ssX"
     def endDate
     def rc
+
     try {
         endDate = Date.parse(dtpattern, dt)
     } catch (e) {
@@ -496,11 +494,14 @@ def durationFromNow(dt=null) {
     }
     use (TimeCategory) {
         def now = new Date()
-        rc = ((endDate - now) =~ /(.+)\b,/)[0][1]
+        if (mins) {
+            rc = ((endDate - now) =~ /\d+(?=\Wminutes)/)[0]
+        } else {
+            rc = ((endDate - now) =~ /(.+)\b,/)[0][1]
+        }
+        return rc
     }
-    return rc
 }
-
 
 def tileLastUpdated() {
     return sprintf("%s Tile Last Refreshed at\n%s","${version()[0]}", timestamp())
@@ -619,12 +620,22 @@ def OrbitBhyveLogin() {
 
 def setScheduler(schedulerFreq) {
     state.schedulerFreq = "${schedulerFreq}"
+
     switch(schedulerFreq) {
         case '0':
         unschedule()
         break
         case '1':
         runEvery1Minute(refresh)
+        break
+        case '2':
+        schedule("${random(60)} 3/${schedulerFreq} * * * ?","refresh")
+        break
+        case '3':
+        schedule("${random(60)} 3/${schedulerFreq} * * * ?","refresh")
+        break
+        case '4':
+        schedule("${random(60)} 3/${schedulerFreq} * * * ?","refresh")
         break
         case '5':
         runEvery5Minutes(refresh)
@@ -657,13 +668,8 @@ def setScheduler(schedulerFreq) {
 
 }
 
-def random() {
-    def runID = new Random().nextInt(10000)
-    //    if (state?.runID == runID as String) {
-    //        log.warn "DUPLICATE EXECUTION RUN AVOIDED: Current runID: ${runID} Past runID: ${state?.runID}"
-    //        return
-    //    }
-    //    state.runID = runID
+def random(int value=10000) {
+    def runID = new Random().nextInt(value)
     return runID
 }
 
@@ -764,4 +770,3 @@ private initializeAppEndpoint() {
 	}
 	return state.endpoint
 }
-

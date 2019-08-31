@@ -13,7 +13,7 @@
 *  for the specific language governing permissions and limitations under the License.
 *
 */
-def version() { return ["V2.01", "Requires Bhyve Orbit Timer Controller"] }
+def version() { return ["V2.03", "Requires Bhyve Orbit Timer Controller"] }
 // End Version Information
 
 import groovy.time.*
@@ -28,6 +28,7 @@ metadata {
         capability "Battery"
         capability "Switch Level"
         capability "Valve"
+        capability "Power"
 
         attribute "is_connected", "enum", ['Online','Offline']
         attribute "firmware_version", "string"
@@ -163,7 +164,7 @@ metadata {
         valueTile("next_start_programs", "device.next_start_programs", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Next Start Pgm\n${currentValue}'
         }
-        valueTile("water_volume_gal", "device.water_volume_gal", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("power", "device.power", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Gallons Used\n${currentValue}'
         }
         standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 2) {
@@ -173,7 +174,7 @@ metadata {
         details(
             [
                 "bigtile",
-                "water_volume_gal",
+                "power",
                 "icon",
                 "is_connected",
                 "battery",
