@@ -52,7 +52,7 @@ Create a new SmartThings Repository entry in your SmartThings IDE under 'Setting
 
 | Owner | Name | Branch |
 |------|:-------:|--------|
-| kurtsanders | STOrbitBhyveController | beta |
+| kurtsanders | STOrbitBhyveController | :new: **beta** |
 
 **Required Files in your SmartThings IDE Repository**
 
