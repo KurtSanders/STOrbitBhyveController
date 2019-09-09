@@ -19,11 +19,11 @@ import groovy.time.*
 import java.text.SimpleDateFormat;
 
 // Start Version Information
-def version()   { return ["V2.03", "Valve Open/Close Device Status & Monitoring"] }
+def version()   { return ["V3.0", "Valve Open/Close Device Status & Monitoring, Rpi/Node"] }
 // End Version Information
 
-String appVersion()	 { return "2.03" }
-String appModified() { return "2019-08-31" }
+String appVersion()	 { return "3.0" }
+String appModified() { return "2019-09-10" }
 
 definition(
     name: 		"Orbit Bhyve Controller",
@@ -266,91 +266,109 @@ def uninstalled() {
 }
 
 mappings {
-    path("/json") {
+    path("/event") {
         action: [
-            POST: "jsonRequest"
-        ]
-    }
-    path("/:command") {
-        action: [
-            GET: "webRequest"
+            POST: "webEvent"
         ]
     }
 }
 
-def jsonRequest() {
-    def data = request.JSON
-
-    log.debug "json data: ${data}"
-//    data.each{ k, v ->
-//        log.debug "${k}:${v}"
-//    }
-    return allDeviceStatus()
+def webEvent() {
+    Random random = new Random()
+    def w = request.JSON
+    def d
+    log.debug "=> webEvent #${random.nextInt(1000)}: ${w.device_id?getChildDevice(DTHDNI(w.device_id)).name:''}: '${w?.event}'-> data: ${w.data?:w}"
+    switch(w?.event) {
+        case 'devices':
+        /* 'devices'-> data: [
+        [id:5b64e8344f0c7f7ff7af3619, rain_delay:0, watering_status:closed, battery:38, name:Front - Left Side],
+        [id:5b6df1514f0c7f7ff7b00013, rain_delay:0, watering_status:closed, battery:31, name:Front - Center ],
+        [id:5b7b488a4f0c7f7ff7b104d3, rain_delay:0, watering_status:closed, battery:41, name:Front - Right Side],
+        [id:5b91523c4f0c7f7ff7b28295, rain_delay:0, watering_status:closed, battery:27, name:Front - Garage Side ],
+        [id:5ba4d2694f0c7f7ff7b39480, rain_delay:0, watering_status:closed, battery:100, name:Back - Walkout]
+        ]
+        */
+        w?.data.each {
+            watering_battery_event(it.device_id,it.watering_status,it.battery)
 }
-
-
-def webRequest() {
-    def command = params.command
-    log.debug "command = ${command}"
-    switch(command) {
-        case "listdevices":
+        break
+        case 'low_battery':
+        case 'device_connected':
+        send_message(w.device_id,w.event.replaceAll("_"," ").toUpperCase())
+        break
+        case 'flow_sensor_state_changed':
+        break
+        case 'change_mode':
+        // change_mode {"mode":"off","device_id":"5ba4d2694f0c7f7ff7b39480","event":"change_mode"}
+        // change_mode {"event":"change_mode","delay":null,"mode":"off","device_id":"5ba4d2694f0c7f7ff7b39480"}
+        //change_mode {"event":"change_mode","mode":"manual","program":null,"stations":[{"station":1,"run_time":2}],"device_id":"5ba4d2694f0c7f7ff7b39480"}
+        d = getChildDevice(DTHDNI(w.device_id))
+        if (d) {
+        d.sendEvent(name:"run_mode", value: w.mode, displayed: false)
+        }
+        break
+        case 'watering_complete':
+        // watering_complete {"event":"watering_complete","program":null,"current_station":null,"run_time":null,"started_watering_station_at":null,"rain_sensor_hold":null,"device_id":"5ba4d2694f0c7f7ff7b39480"}
+        watering_battery_event(w.device_id,'closed')
+        break
+        case 'watering_in_progress_notification':
+        // watering_in_progress_notification {"event":"watering_in_progress_notification","mode":null,"program":"manual","stations":null,"current_station":1,"run_time":1,"started_watering_station_at":"2019-09-09T00:05:50.000Z","rain_sensor_hold":false,"device_id":"5ba4d2694f0c7f7ff7b39480"}
+        watering_battery_event(w.device_id,'open')
+        break
+        case 'rain_delay':
+        // rain_delay {"event":"rain_delay","mode":null,"delay":0,"device_id":"5ba4d2694f0c7f7ff7b39480"}
+        break
+        case 'status':
         return allDeviceStatus()
         break
-        case "updatedevices":
-        log.debug "Params: ${params.id}, ${params.valve}, ${params.level}"
-        updateDevices(params.id, params.valve, params.level )
-        break
         default:
-            httpError(400, "$command is not a valid command for all valves specified")
+            def retMsg = "UNKNOWN device event '${webJSONdata?.event}' post_data: ${webJSONdata}"
+            log.error retMsg
+        return retMsg
+        break
     }
     return
-}
-
-def updateDevices(id,valvestatus,level) {
-    return
-
-    // all valves have the command
-    // execute the command on all switches
-    // (note we can do this on the array - the command will be invoked on every element
-    switch(command) {
-        case "open":
-        log.debug "valves.open()"
-        break
-        case "closed":
-        log.debug "valves.closed()"
-        break
-        default:
-            httpError(400, "$command is not a valid command for all valves specified")
-    }
-    return
-
-    valves.each {
-        if(it.id == command)
-        {
-            log.debug "Found valve ${it.displayName} with id ${it.id} with current value ${it.currentValve}"
-            if(it.currentValve == "closed")
-            it.closed()
-            else
-                it.open()
-            return
         }
+
+def send_message(device_id,event) {
+    def d = getChildDevice(DTHDNI(device_id))
+    if (d) {
+        def message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()}!"
+            if (sendPush) {
+                sendPush(message)
+            }
+            if (phone) {
+                sendSms(phone, message)
+    }
+    } else {
+        log.error "Unknown b•hyve™ device id: ${device_id}"
     }
 }
 
-def appTouchHandler(evt="") {
-    log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
-//        log.info  "${it} <-> DNI: ${it.deviceNetworkId}"
-//    allDeviceStatus()
-    main()
+def watering_battery_event(device_id=null,bhyve_valve_state=null,battery_percent=null) {
+    def d = getChildDevice(DTHDNI(device_id))
+    if (d) {
+        def st_valve_state = d.latestValue('valve')
+        if ( st_valve_state != bhyve_valve_state) {
+            log.info "${d.name}: Valve state of '${st_valve_state}' CHANGED to '${bhyve_valve_state.toUpperCase()}'"
+            d.sendEvent(name:"valve", value: bhyve_valve_state )
+            send_message(id,"Valve: ${bhyve_valve_state.toUpperCase()}")
+        }
+        if (battery_percent) {
+            d.sendEvent(name:"battery", value: battery_percent, displayed:false )
+            d.sendEvent(name:"battery_display", value: (Math.round(battery_percent.toInteger()/10.0) * 10).toString(), displayed:true, isStateChange: true )
+
+        }
+        d.sendEvent(name:"lastSTupdate", value: tileLastUpdated(), displayed: false)
+    } else {
+        log.error "Unknown b•hyve™ device_id: ${device_id}"
+    }
 }
 
-def refresh() {
-    log.info "Executing Refresh Routine ID:${random()} at ${timestamp()}"
-    main()
-}
+
 
 def allDeviceStatus() {
-    //    log.debug "allDeviceStatus(): Start Routine"
+    log.debug "allDeviceStatus(): Start Routine"
     def children = app.getChildDevices()
     def thisdevice
     def d
@@ -373,6 +391,27 @@ def allDeviceStatus() {
     return resp
 }
 
+def appTouchHandler(evt="") {
+    log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
+    main()
+    return
+
+    def children = getAllChildDevices()
+    def d
+    children.findAll {
+        if (it.deviceNetworkId == id) {
+            log.debug "I found ${it.name}"
+            d = getChildDevice(it.deviceNetworkId)
+            log.debug d.latestValue('valve')
+        }
+    }
+}
+
+def refresh() {
+    log.info "Executing Refresh Routine ID:${random()} at ${timestamp()}"
+    main()
+}
+
 def main() {
     log.info "Executing Main Routine ID:${random()} at ${timestamp()}"
     def respdata = OrbitGet("devices")
@@ -386,7 +425,7 @@ def updateTiles(respdata) {
     def d = null
     def rainDelayHrs
     def rainDelayDT
-    def byhveTimerOnOffState
+    def byhveValveState
     def message
     def banner
     def watering_events
@@ -420,24 +459,13 @@ def updateTiles(respdata) {
                     d.sendEvent(name:"type", value: it?.type, displayed: false )
                     switch (it.type) {
                         case "sprinkler_timer":
-                        byhveTimerOnOffState = it?.status.watering_status?"open":"closed"
-                        if ( d.latestValue("valve") != byhveTimerOnOffState ) {
-                            d.sendEvent(name:"valve", value: byhveTimerOnOffState )
-                            message = "Orbit Byhve Timer: The ${it.name} has changed to '${byhveTimerOnOffState.toUpperCase()}' at ${timestamp()}!"
-                            if (sendPush) {
-                                sendPush(message)
-                            }
-                            if (phone) {
-                                sendSms(phone, message)
-                            }
-                        }
-                        d.sendEvent(name:"battery", value: it?.battery?.percent )
+                        byhveValveState = it?.status.watering_status?"open":"closed"
+                        watering_battery_event(it.id,byhveValveState,it?.battery?.percent)
                         d.sendEvent(name:"presetRuntime", value: it?.manual_preset_runtime_sec/60, displayed: false )
                         d.sendEvent(name:"rain_delay", value: it?.rain_delay )
                         d.sendEvent(name:"batteryCharging", value: it?.battery.charging, displayed: false )
                         d.sendEvent(name:"run_mode", value: it.status?.run_mode, displayed: false)
                         d.sendEvent(name:"sprinkler_type", value: it?.zones[0].sprinkler_type, displayed: false)
-
                         def stp = OrbitGet("sprinkler_timer_programs", it.id)
                         if (stp) {
                             d.sendEvent(name:"start_times", value: "${stp?.start_times[0][0]} for ${stp?.run_times[0][0].run_time} mins", displayed: false)
@@ -457,7 +485,7 @@ def updateTiles(respdata) {
                             banner = "Next Start: ${getMyDateTime(it?.status?.next_start_time)}"
                         }
                         watering_events = OrbitGet('watering_events', it.id).first()
-                        if (byhveTimerOnOffState=='open') {
+                        if (byhveValveState=='open') {
                             d.sendEvent(name:"power", value: watering_events?.irrigation?.water_volume_gal[0], descriptionText:"${watering_events?.irrigation?.water_volume_gal[0]} gallons")
 //                            d.sendEvent(name:"level", value: watering_events?.irrigation?.run_time[0] )
                             wateringTimeLeft = durationFromNow(it?.status?.next_start_time, true)

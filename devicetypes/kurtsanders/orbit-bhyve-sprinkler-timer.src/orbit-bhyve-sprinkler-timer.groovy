@@ -13,7 +13,7 @@
 *  for the specific language governing permissions and limitations under the License.
 *
 */
-def version() { return ["V2.03", "Requires Bhyve Orbit Timer Controller"] }
+def version() { return ["V3.0", "Requires Bhyve Orbit Timer Controller"] }
 // End Version Information
 
 import groovy.time.*
@@ -49,6 +49,7 @@ metadata {
         attribute "presetRuntime", "number"
         attribute "updown", "number"
         attribute "water_volume_gal", "number"
+        attribute "battery_display", "string"
 
         command "setLevelUp"
         command "setLevelDown"
@@ -134,14 +135,37 @@ metadata {
         valueTile("hardware_version", "device.hardware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Hardware\n${currentValue}'
         }
-        valueTile("battery", "device.battery", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Battery\n${currentValue}%'
+        standardTile("battery_display", "device.battery_display", width: 2, height: 2, decoration: "flat", wordWrap: true) {
+            state "default",   icon: getAppImg('icons/battery-na.jpg')
+            state "0",   icon: getAppImg('icons/battery-0.jpg')
+            state "10",  icon: getAppImg('icons/battery-10.jpg')
+            state "20",  icon: getAppImg('icons/battery-20.jpg')
+            state "30",  icon: getAppImg('icons/battery-30.jpg')
+            state "40",  icon: getAppImg('icons/battery-40.jpg')
+            state "50",  icon: getAppImg('icons/battery-50.jpg')
+            state "60",  icon: getAppImg('icons/battery-60.jpg')
+            state "70",  icon: getAppImg('icons/battery-70.jpg')
+            state "80",  icon: getAppImg('icons/battery-80.jpg')
+            state "90",  icon: getAppImg('icons/battery-90.jpg')
+            state "100", icon: getAppImg('icons/battery-100.jpg')
+        }
+        valueTile("battery", "device.battery", width: 1, height: 1, decoration: "flat", wordWrap: true) {
+            state "battery", label: 'Bat\n${currentValue}%',
+                backgroundColors:[
+                    [value: 30, color: "#153591"],
+                    [value: 40, color: "#1e9cbb"],
+                    [value: 50, color: "#90d2a7"],
+                    [value: 60, color: "#44b621"],
+                    [value: 70, color: "#f1d801"],
+                    [value: 80, color: "#d04e00"],
+                    [value: 90, color: "#bc2323"]
+                ]
+        }
+        valueTile("run_mode", "device.run_mode", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", 	label: 'Run Mode\n${currentValue}'
         }
         valueTile("presetRuntime", "device.presetRuntime", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Preset Runtime\n${currentValue} mins'
-        }
-        valueTile("run_mode", "device.run_mode", width: 3, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Run Mode\n${currentValue}'
         }
         valueTile("sprinkler_type", "device.sprinkler_type", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Sprinkler Type\n${currentValue}'
@@ -155,7 +179,7 @@ metadata {
         valueTile("lastSTupdate", "device.lastSTupdate", width: 5, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}', action:"refresh"
         }
-        valueTile("next_start_time", "device.next_start_time", width: 3, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("next_start_time", "device.next_start_time", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Duration to Start\n${currentValue}'
         }
         valueTile("start_times", "device.start_times", width: 3, height: 1, decoration: "flat", wordWrap: true) {
@@ -165,33 +189,34 @@ metadata {
             state "default", label: 'Next Start Pgm\n${currentValue}'
         }
         valueTile("power", "device.power", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Gallons Used\n${currentValue}'
+            state "power", label: 'Gallons Used\n${currentValue}'
         }
-        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 2) {
+        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "default", label: 'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         main(["bigtile"])
         details(
             [
                 "bigtile",
-                "power",
+                "battery_display",
                 "icon",
                 "is_connected",
-                "battery",
-                "name",
+                "power",
                 "next_start_time",
-                "rain_icon",
                 "start_times",
+                "rain_icon",
                 "presetRuntime",
                 "run_mode",
-                "schedulerFreq",
-                "next_start_programs",
-                "sprinkler_type",
-                "hardware_version",
-                "lastupdate",
-                "lastSTupdate",
                 "firmware_version",
-                "refresh"
+                "sprinkler_type",
+                "next_start_programs",
+                "hardware_version",
+                "schedulerFreq",
+                "lastupdate",
+                "refresh",
+                "lastSTupdate",
+                "battery"
+
             ]
         )
     }
