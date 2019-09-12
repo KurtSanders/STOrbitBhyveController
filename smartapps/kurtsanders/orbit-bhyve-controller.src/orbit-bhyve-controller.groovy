@@ -19,11 +19,11 @@ import groovy.time.*
 import java.text.SimpleDateFormat;
 
 // Start Version Information
-def version()   { return ["V3.0", "Valve Open/Close Device Status & Monitoring, Rpi/Node"] }
+def version()   { return ["V3.01", "Valve Open/Close Device Status & Monitoring, Rpi/Node"] }
 // End Version Information
 
-String appVersion()	 { return "3.0" }
-String appModified() { return "2019-09-10" }
+String appVersion()	 { return "3.01" }
+String appModified() { return "2019-09-11" }
 
 definition(
     name: 		"Orbit Bhyve Controller",
@@ -120,7 +120,7 @@ def mainOptions() {
         section("API Setup") {
             href name: "APIPageLink", title: "API Setup", description: "", page: "APIPage"
         }
-        section("Spa Refresh Update Interval") {
+        section("Device Refresh/Polling Update Interval") {
             input ( name: "schedulerFreq",
                    type: "enum",
                    title: "Run Bhyve Refresh Every (X mins)?",
@@ -135,14 +135,23 @@ def mainOptions() {
         section("SMS & Push Notifications for Timer On/Off activity?") {
             input ( name    : "sendPush",
                    type     : "bool",
-                   title    : "Send Mobile Client Push Notification? (optional)",
+                   title    : "Send Events Mobile Client Push Notification? (optional)",
                    required : false
                   )
             input ( name	: "phone",
                    type		: "phone",
-                   title	: "Send SMS Text Messages (optional)",
-                   description: "Mobile Phone Number",
+                   title	: "Send Events as SMS Text Messages (optional)",
+                   description: "Enter Mobile Phone Number to Enable",
                    required: false
+                  )
+            input ( name	: "eventsToNotify",
+                   type		: "enum",
+                   title	: "Which Events",
+                   options: ['valves':'Watering','low_battery':'Low Battery','device_connected':'Device Connected'].sort(),
+                   description: "Select Events to Notify",
+                   defaultValue: eventsToNotify?:'Tap to Select',
+                   required: false,
+                   multiple: true
                   )
         }
         section() {
@@ -307,6 +316,9 @@ def webEvent() {
         d.sendEvent(name:"run_mode", value: w.mode, displayed: false)
         }
         break
+        case 'watering_events':
+
+        break
         case 'watering_complete':
         // watering_complete {"event":"watering_complete","program":null,"current_station":null,"run_time":null,"started_watering_station_at":null,"rain_sensor_hold":null,"device_id":"5ba4d2694f0c7f7ff7b39480"}
         watering_battery_event(w.device_id,'closed')
@@ -332,8 +344,16 @@ def webEvent() {
 
 def send_message(device_id,event) {
     def d = getChildDevice(DTHDNI(device_id))
+    def message
     if (d) {
-        def message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()}!"
+        if (event.toLowerCase().contains('closed')) {
+            Date lastOpen = new Date( state.valveLastOpenEpoch["${DTHDNI(device_id)}"] )
+            use (TimeCategory) {
+                message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()}.  The ${d.name} was actively watering for ${new Date() - lastOpen}!"
+            }
+        } else {
+            message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()}!"
+        }
             if (sendPush) {
                 sendPush(message)
             }
@@ -341,7 +361,7 @@ def send_message(device_id,event) {
                 sendSms(phone, message)
     }
     } else {
-        log.error "Unknown b•hyve™ device id: ${device_id}"
+        log.error "send_message(): Unknown b•hyve™ device_id: ${device_id}"
     }
 }
 
@@ -352,16 +372,18 @@ def watering_battery_event(device_id=null,bhyve_valve_state=null,battery_percent
         if ( st_valve_state != bhyve_valve_state) {
             log.info "${d.name}: Valve state of '${st_valve_state}' CHANGED to '${bhyve_valve_state.toUpperCase()}'"
             d.sendEvent(name:"valve", value: bhyve_valve_state )
-            send_message(id,"Valve: ${bhyve_valve_state.toUpperCase()}")
+            send_message(device_id,"Valve: ${bhyve_valve_state.toUpperCase()}")
+            if (bhyve_valve_state == 'open') {
+                state.valveLastOpenEpoch << ["${DTHDNI(device_id)}":now()]
+            }
         }
         if (battery_percent) {
             d.sendEvent(name:"battery", value: battery_percent, displayed:false )
-            d.sendEvent(name:"battery_display", value: (Math.round(battery_percent.toInteger()/10.0) * 10).toString(), displayed:true, isStateChange: true )
-
+            d.sendEvent(name:"battery_display", value: (Math.round(battery_percent.toInteger()/10.0) * 10).toString(), displayed:false )
         }
         d.sendEvent(name:"lastSTupdate", value: tileLastUpdated(), displayed: false)
     } else {
-        log.error "Unknown b•hyve™ device_id: ${device_id}"
+        log.error "watering_battery_event(): Unknown b•hyve™ device_id: ${device_id}"
     }
 }
 
@@ -387,7 +409,6 @@ def allDeviceStatus() {
             ]
         }
     }
-    //    log.debug "Raw ${resp}"
     return resp
 }
 
@@ -398,11 +419,13 @@ def appTouchHandler(evt="") {
 
     def children = getAllChildDevices()
     def d
+    def valveState
+
     children.findAll {
-        if (it.deviceNetworkId == id) {
-            log.debug "I found ${it.name}"
             d = getChildDevice(it.deviceNetworkId)
-            log.debug d.latestValue('valve')
+        if (d.latestValue('valve')) {
+            //          state.valveLastOpenEpoch << ["${it.deviceNetworkId}" : now()]
+            log.debug "Name: ${d.name} -  ${new Date(state.valveLastOpenEpoch[it.deviceNetworkId]).format('EEE MMM d, h:mm a', location.timeZone).replace("AM", "am").replace("PM","pm")}"
         }
     }
 }
@@ -514,11 +537,11 @@ def durationFromNow(dt=null,mins=false) {
     def dtpattern = dt.contains('Z')?"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'":"yyyy-MM-dd'T'HH:mm:ssX"
     def endDate
     def rc
-
     try {
         endDate = Date.parse(dtpattern, dt)
     } catch (e) {
-        return "durationFromNow(dt): Error converting ${dt}: ${e}"
+        log.error "durationFromNow(): Error converting ${dt}: ${e}"
+        return "durationFromNow(): Error converting ${dt}: ${e}"
     }
     use (TimeCategory) {
         def now = new Date()
