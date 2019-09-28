@@ -1,6 +1,6 @@
 # STOrbitBhyveController
 #### * SmartThings® Integration for the b•hyve™ hose faucet timers *
-### Version: 3.01 (beta Branch - Alpha Testers)
+### Version: 4.00 (beta Branch - Alpha Testing Phase)
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/readme.png" width="50">  
 [Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
 
@@ -33,10 +33,12 @@ This SmartThings application allows one to **view** the state of their [Orbit b�
 
 ## Requirements:
 
-1. One or more of the following [Orbit b•hyve™ Smart Hose Timer and/or Wi-Fi Hub](https://bhyve.orbitonline.com/hosefaucet/) shown below: 
+1. One or more of the following [Orbit b•hyve™ Smart Timers and/or Wi-Fi Hub](https://bhyve.orbitonline.com/hosefaucet/) shown below: 
 <p align="center">
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/bhyveIcon.png" width=200><br>
-<a href="https://www.amazon.com/Orbit-B-hyve-21004-Faucet-Compatible/dp/B0758NR8DJ/ref=sr_1_2?s=lawn-garden&ie=UTF8&qid=1519147062&sr=1-2&keywords=bhyve">Amazon™ Orbit b•hyve™ Model 21004</a>
+<a href="https://www.amazon.com/Orbit-B-hyve-21004-Faucet-Compatible/dp/B0758NR8DJ/ref=sr_1_2?s=lawn-garden&ie=UTF8&qid=1519147062&sr=1-2&keywords=bhyve">Amazon™ Orbit b•hyve™ Model 21004</a><br><br>
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/beta/images/icons/ht-12.jpg" width=200><br>
+<a href="https://www.amazon.com/Orbit-57950-Outdoor-Sprinkler-Controller/dp/B01D15HOTU?ie=UTF8&*Version*=1&*entries*=0">Amazon™ Orbit 57950 B-hyve Smart Indoor/Outdoor 6/12-Station WiFi Sprinkler System Controller</a><br>
 </p>
 
 2. A supported mobile device with **SmartThings Legacy Client**. *This app will not work in the new Samsung SmartThings App*.  
@@ -60,8 +62,8 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 
 | IDE Repository    | Filename | Status |
 | :---: | :----------| :---:  |
-| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **Updated V3.01** |
-| My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **Updated V3.0** |
+| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **Updated V4.0** |
+| My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **Updated V4.0** |
 | My Device Handler | kurtsanders : Orbit Bhyve Bridge | UnChanged from V1 |
 
 
