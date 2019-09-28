@@ -64,7 +64,7 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 | :---: | :----------| :---:  |
 | My SmartApps      | kurtsanders : Orbit Bhyve Controller | **Updated V4.0** |
 | My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **Updated V4.0** |
-| My Device Handler | kurtsanders : Orbit Bhyve Bridge | UnChanged from V1 |
+| My Device Handler | kurtsanders : Orbit Bhyve Bridge | **Updated V4.0**|
 
 
 **Instructions**
