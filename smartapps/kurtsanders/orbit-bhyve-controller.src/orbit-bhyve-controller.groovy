@@ -28,9 +28,9 @@ definition(
     author: 	"Kurt@KurtSanders.com",
     description:"Control and monitor your network connected Orbit™ Bhyve Timer anywhere via SmartThings®",
     category: 	"My Apps",
-    iconUrl: 	getAppImg("icons/bhyveIcon.png"),
-    iconX2Url: 	getAppImg("icons/bhyveIcon.png"),
-    iconX3Url: 	getAppImg("icons/bhyveIcon.png"),
+    iconUrl: 	getAppImg("icons/bhyve-b.jpg"),
+    iconX2Url: 	getAppImg("icons/bhyve-b.jpg"),
+    iconX3Url: 	getAppImg("icons/bhyve-b.jpg"),
     singleInstance: true
 )
 preferences {
@@ -286,6 +286,7 @@ def enableAPIPage() {
 }
 
 def initialize() {
+    state[valveLastOpenEpoch] = [:]
     add_bhyve_ChildDevice()
     setScheduler(schedulerFreq)
     subscribe(app, appTouchHandler)
@@ -600,16 +601,31 @@ def updateTiles(data) {
                         banner = "Next Start: Pgm ${next_start_programs} - ${convertDateTime(it.status.next_start_time)}"
                     }
 
+                    def testingMode = false
+                    if (station == -1) {
+                        testingMode = true
+                        it.status.watering_status = [:]
+
+                        String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
+
+                        String date = simpleDateFormat.format(new Date());
+
+                        it.status.watering_status.started_watering_station_at = date
+                        log.debug "it.status.watering_status.started_watering_station_at  = ${it.status.watering_status.started_watering_station_at }"
+                    }
+
                     byhveValveState = it.status.watering_status?"open":"closed"
                     st_valve_state = d.latestValue('valve')
                     if (byhveValveState == 'open') {
-                        state.valveLastOpenEpoch << ["${d.deviceNetworkId}": it.status.watering_status?.started_watering_station_at]
+                    if (!state.valveLastOpenEpoch) state.valveLastOpenEpoch = [:]
+                        state.valveLastOpenEpoch["${d.deviceNetworkId}"] = it.status.watering_status.started_watering_station_at
                     }
                     if ( st_valve_state != byhveValveState) {
                         log.info "${d.name}: Valve state of '${st_valve_state}' CHANGED to '${byhveValveState.toUpperCase()}'"
                         d.sendEvent(name:"valve", 			value: byhveValveState )
                         if (byhveValveState == 'open') {
-                            state.valveLastOpenEpoch << ["${d.deviceNetworkId}" : it.status.watering_status?.started_watering_station_at]
+                            state.valveLastOpenEpoch["${d.deviceNetworkId}"] = it.status.watering_status.started_watering_station_at
                         }
                         send_message(d,"Valve: ${byhveValveState.toUpperCase()}")
                     }
@@ -653,9 +669,9 @@ def updateTiles(data) {
                     }
                     // Watering Events
                     watering_events = OrbitGet('watering_events', it.id)[0]
-                    watering_events.irrigation = watering_events.irrigation[-1]
+                    watering_events.irrigation = watering_events.irrigation[-1]?:0
 
-                    if (byhveValveState=='open') {
+                    if ((watering_events) && (byhveValveState=='open')) {
                         def water_volume_gal = watering_events.irrigation.water_volume_gal?:0
                         started_watering_station_at = convertDateTime(it.status.watering_status.started_watering_station_at)
                         d.sendEvent(name:"water_volume_gal", value: water_volume_gal, descriptionText:"${water_volume_gal} gallons")
@@ -664,7 +680,7 @@ def updateTiles(data) {
                         banner ="Active Watering - ${water_volume_gal} gals at ${timestamp('short') }"
                     } else {
                         d.sendEvent(name:"water_volume_gal"	, value: 0, descriptionText:"gallons", displayed: false )
-                        d.sendEvent(name:"level"			, value: watering_events.irrigation.run_time, displayed: false)
+                        d.sendEvent(name:"level"			, value: watering_events?.irrigation.run_time, displayed: false)
                     }
                     d.sendEvent(name:"banner", value: banner, displayed: false )
                 }
@@ -717,7 +733,7 @@ def durationFromNow(dt,showOnly=null) {
 
 
 def tileLastUpdated() {
-    return sprintf("%s Tile Last Refreshed at\n%s","${version()[0]}", timestamp())
+    return sprintf("%s Tile Last Refreshed on\n%s","${version()[0]}", timestamp('long',true))
 }
 
 def timestamp(type='long', mobileTZ=false) {
@@ -963,16 +979,22 @@ def remove_bhyve_ChildDevice() {
         }
     }
 }
+
 def convertDateTime(dt) {
-    def dtpattern = dt.contains('Z')?"yyyy-MM-dd'T'HH:mm:ss.SSS'Z'":"yyyy-MM-dd'T'HH:mm:ssX"
-    def rc
     def timezone = TimeZone.getTimeZone(state.timezone)
-    try {
-        rc = Date.parse(dtpattern, dt).format('EEE MMM d, h:mm a', timezone).replace("AM", "am").replace("PM","pm")
-    } catch (e) {
-        return ""
+    def rc
+    switch (dt) {
+        case ~/.*UTC.*/:
+        rc = dt
+        break
+        case ~/.*Z.*/:
+        rc = Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", dt)
+        break
+        default:
+            rc = Date.parse("yyyy-MM-dd'T'HH:mm:ssX", dt)
+        break
     }
-    return rc
+    return rc.format('EEE MMM d, h:mm a', timezone).replace("AM", "am").replace("PM","pm")
 }
 
 // Constant Declarations
