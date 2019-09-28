@@ -31,7 +31,7 @@ definition(
     iconUrl: 	getAppImg("icons/bhyve-b.jpg"),
     iconX2Url: 	getAppImg("icons/bhyve-b.jpg"),
     iconX3Url: 	getAppImg("icons/bhyve-b.jpg"),
-    singleInstance: true
+    singleInstance: false
 )
 preferences {
     page(name:"mainMenu")
@@ -111,18 +111,18 @@ def mainMenu() {
 
 def mainOptions() {
     def notifyList = []
+    if (pushoverEnabled || sendPushEnabled || sendSMSEnabled) {
+        notifyList = []
+        if (pushoverEnabled) 	notifyList << "PushOver"
+        if (sendPushEnabled) 	notifyList << "ST Client"
+        if (sendSMSEnabled) 	notifyList << "SMS"
+        log.debug "notifyList = ${notifyList}"
+    }
     dynamicPage(name: "mainOptions",
                 title: "Bhyve Timer Controller Options",
                 install: true,
                 uninstall: false)
     {
-        if (pushoverEnabled || sendPush || sendSMS) {
-        	notifyList = []
-            if (pushoverEnabled) notifyList << "PushOver"
-            if (sendPush) notifyList << "ST Client"
-            if (sendSMS) notifyList << "SMS"
-            log.debug "notifyList = ${notifyList}"
-        }
         section("API Setup") {
             href name: "APIPageLink", title: "API Setup (Optional or Required if Using Rpi API)", description: "", page: "APIPage"
         }
@@ -139,7 +139,7 @@ def mainOptions() {
                  title: "Push Notification Options",
                  page: "notificationOptions",
                  description: "Notification Options",
-                 defaultValue: (notifyList.size())?notifyList.join(', '):"Tap to Select Notification Options")
+                 defaultValue: (notifyList.size()>0)?notifyList.join(', '):"Tap to Select Notification Options")
         }
 
         section() {
@@ -194,13 +194,18 @@ def notificationOptions() {
         }
 
         section("SMS & Push Notifications for Timer On/Off activity?") {
-            input ( name    : "sendPush",
+            input ( name    : "sendSMSEnabled",
                    type     : "bool",
                    title    : "Send Events to ST Mobile Client Push Notification? (optional)",
                    required : false
                   )
-            input ("sendSMS", "bool", title: "Use SMS for Notifications (optional)", required: false, submitOnChange: true)
-            if(sendSMS) {
+            input ( name	: "sendSMSEnabled",
+                   type: "bool",
+                   title: "Use SMS for Notifications (optional)",
+                   required: false,
+                   submitOnChange: true
+                  )
+            if(sendSMSEnabled) {
                 input ( name	: "phone",
                        type		: "phone",
                        title	: "Send Notification Events as SMS Text Messages (optional)",
@@ -414,9 +419,9 @@ def send_message(d , event) {
     } else {
         message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()}!"
     }
-    if (sendPush) sendPush(message)
-    if (sendSMS) sendSms(phone, message)
-    if (pushoverEnabled) sendPushoverMessage(message)
+    if (sendPushEnabled) 	sendPush(message)
+    if (sendSMSEnabled) 	sendSms(phone, message)
+    if (pushoverEnabled) 	sendPushoverMessage(message)
 }
 
 def sendPushoverMessage(data) {
@@ -566,6 +571,12 @@ def updateTiles(data) {
                 d.sendEvent(name:"is_connected", 	value: it.is_connected, 					displayed: false)
                 d.sendEvent(name:"icon",		 	value: it.num_stations, 					displayed: false)
 
+                // Check for Orbit WiFi bridge
+                if (deviceType == 'bridge') {
+                    d.sendEvent(name:"firmware_version", value: it?.firmware_version, displayed: false)
+                    d.sendEvent(name:"hardware_version", value: it?.hardware_version, displayed: false)
+                }
+
                 // Check for Orbit sprinkler_timer device
                 if (deviceType == 'sprinkler_timer') {
                     zoneData 	= it.zones[i]
@@ -644,14 +655,26 @@ def updateTiles(data) {
                                 }
                                 switch (it.frequency.type) {
                                     case 'interval':
-                                    freqMsg = "every ${it.frequency.interval} days"
+                                    freqMsg = "every ${it.frequency.interval} day(s)"
                                     break
                                     case 'odd':
                                     case 'even':
                                     freqMsg = "every ${it.frequency.type} day"
                                     break
                                     case 'days':
-                                    freqMsg = "every day"
+                                    def dow = []
+                                    def map=[
+                                        0:"Sunday",
+                                        1:"Monday",
+                                        2:"Tuesday",
+                                        3:"Wednesday",
+                                        4:"Thusday",
+                                        5:"Friday",
+                                        6:"Saturday"]
+                                    it.frequency.days.each{
+                                        dow << map[it]
+                                    }
+                                    freqMsg = "every ${dow.join(' & ')}"
                                     break
                                     default:
                                         freqMsg = "'${it.frequency.type}' freq type unknown"
@@ -1002,11 +1025,11 @@ def version()   				{ return ["${appVersion()}", appDesc()]}
 def errorVerbose(String message) {if (errorVerbose){log.info "${message}"}}
 def debugVerbose(String message) {if (debugVerbose){log.info "${message}"}}
 def infoVerbose(String message)  {if (infoVerbose){log.info "${message}"}}
-String DTHDNI(id) 					{(id.startsWith('bhyve'))?id:"bhyve${id}"}
+String DTHDNI(id) 					{(id.startsWith('bhyve'))?id:"bhyve-${app.id}-${id}"}
 String DTHnamespace()			{ return "kurtsanders" }
 String appAuthor()	 			{ return "SanderSoft™" }
 String githubCodeURL()			{ return "https://github.com/KurtSanders/STOrbitBhyveController#storbitbhyvecontroller"}
-String getAppImg(imgName) 		{ return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/$imgName" }
+String getAppImg(imgName) 		{ return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/beta/images/$imgName" }
 String DTHName(type) 			{ return "Orbit Bhyve ${type}" }
 String orbitBhyveLoginAPI() 	{ return "https://api.orbitbhyve.com/v1/" }
 String web_postdata() 			{ return "{\n    \"session\": {\n        \"email\": \"$username\",\n        \"password\": \"$password\"\n    }\n}" }

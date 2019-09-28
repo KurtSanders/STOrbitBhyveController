@@ -13,7 +13,7 @@
 *  for the specific language governing permissions and limitations under the License.
 *
 */
-def version() { return ["V1.0", "Requires Bhyve Orbit Controller"] }
+def version() { return ["V4.0", "Requires Bhyve Orbit Controller"] }
 // End Version Information
 import groovy.time.*
 import java.text.DecimalFormat
@@ -25,7 +25,7 @@ metadata {
         capability "Refresh"
         capability "Sensor"
 
-        attribute "is_connected", "enum", ['Online','Offline']
+        attribute "is_connected", "enum", ['true','false']
         attribute "firmware_version", "string"
         attribute "hardware_version", "string"
         attribute "schedulerFreq", "string"
@@ -34,13 +34,12 @@ metadata {
         attribute "lastSTupdate", "string"
         attribute "name","string"
         attribute "type","string"
-        attribute "num_stations", "number"
     }
     tiles(scale: 2) {
         // Network Connected Status
         standardTile("is_connected", "device.is_connected",  width: 2, height: 2, decoration: "flat" ) {
-            state "Offline", label: 'Offline' , backgroundColor: "#e86d13", icon:"st.Health & Wellness.health9"
-            state "Online",  label: 'Online' , backgroundColor: "#00a0dc", icon:"st.Health & Wellness.health9"
+            state "false", label: 'Offline' , backgroundColor: "#e86d13", icon:"st.Health & Wellness.health9"
+            state "true",  label: 'Online' , backgroundColor: "#00a0dc", icon:"st.Health & Wellness.health9"
         }
         valueTile("icon", "icon", width: 1, height: 1, decoration: "flat") {
             state "default", icon: getAppImg('icons/bh1.png')
@@ -54,10 +53,10 @@ metadata {
         valueTile("schedulerFreq", "device.schedulerFreq", decoration: "flat", width: 2, height: 1, wordWrap: true) {
             state "default", label: 'Refresh Every\n${currentValue} min(s)'
         }
-        valueTile("lastupdate", "device.lastupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("lastupdate", "device.lastupdate", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Last Connected\n${currentValue}', action: "refresh"
         }
-        valueTile("lastSTupdate", "device.lastSTupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("lastSTupdate", "device.lastSTupdate", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}', action:"refresh"
         }
         valueTile("name", "device.name", width: 4, height: 1, decoration: "flat", wordWrap: true) {
@@ -66,10 +65,7 @@ metadata {
         valueTile("type", "device.type", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Bhyve Type\n${currentValue}'
         }
-        valueTile("num_stations", "device.num_stations", width: 3, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Number Stations\n${currentValue}'
-        }
-        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
             state "default", label: 'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         main(["is_connected"])
@@ -78,13 +74,12 @@ metadata {
                 "is_connected",
                 "name",
                 "icon",
-                "num_stations",
+                "schedulerFreq",
+                "refresh",
                 "firmware_version",
                 "hardware_version",
                 "lastupdate",
-                "lastSTupdate",
-                "schedulerFreq",
-                "refresh"
+                "lastSTupdate"
             ]
         )
     }
