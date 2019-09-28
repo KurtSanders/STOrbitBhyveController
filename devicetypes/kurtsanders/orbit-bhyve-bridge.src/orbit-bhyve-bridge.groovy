@@ -33,8 +33,7 @@ metadata {
         attribute "statusText", "string"
         attribute "lastSTupdate", "string"
         attribute "name","string"
-        attribute "next_start_time", "string"
-        attribute "next_start_programs", "string"
+        attribute "type","string"
         attribute "num_stations", "number"
     }
     tiles(scale: 2) {
@@ -46,10 +45,10 @@ metadata {
         valueTile("icon", "icon", width: 1, height: 1, decoration: "flat") {
             state "default", icon: getAppImg('icons/bh1.png')
         }
-        valueTile("firmware_version", "device.firmware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("firmware_version", "device.firmware_version", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Firmware\n${currentValue}'
         }
-        valueTile("hardware_version", "device.hardware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("hardware_version", "device.hardware_version", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Hardware\n${currentValue}'
         }
         valueTile("schedulerFreq", "device.schedulerFreq", decoration: "flat", width: 2, height: 1, wordWrap: true) {
@@ -64,31 +63,26 @@ metadata {
         valueTile("name", "device.name", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}'
         }
-        valueTile("next_start_time", "device.next_start_time", width: 4, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Next Start Time\n${currentValue}'
-        }
-        valueTile("next_start_programs", "device.next_start_programs", width: 3, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Next Start Pgm\n${currentValue}'
+        valueTile("type", "device.type", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: 'Bhyve Type\n${currentValue}'
         }
         valueTile("num_stations", "device.num_stations", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Number Stations\n${currentValue}'
         }
-        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
+        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
             state "default", label: 'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         main(["is_connected"])
         details(
             [
                 "is_connected",
-                "icon",
                 "name",
+                "icon",
+                "num_stations",
                 "firmware_version",
                 "hardware_version",
-                "next_start_time",
-                "next_start_programs",
                 "lastupdate",
                 "lastSTupdate",
-                "num_stations",
                 "schedulerFreq",
                 "refresh"
             ]
@@ -99,7 +93,7 @@ metadata {
 def refresh() {
     Date now = new Date()
     def timeString = now.format("EEE MMM dd h:mm:ss a", location.timeZone)
-    log.info "==>Refresh Requested from Orbit B•Hyve™ Timer Device, sending refresh() request to parent smartApp"
+    log.info "==> Manual Refresh Requested from Orbit B•Hyve™ Bridge Device, sending refresh() request to parent smartApp"
     sendEvent(name: "lastSTupdate", value: "Cloud Refresh Requested at\n${timeString}...", "displayed":false)
     parent.refresh()
 }

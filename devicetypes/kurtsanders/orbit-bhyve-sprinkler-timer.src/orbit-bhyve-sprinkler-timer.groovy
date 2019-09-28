@@ -13,43 +13,40 @@
 *  for the specific language governing permissions and limitations under the License.
 *
 */
-def version() { return ["V3.0", "Requires Bhyve Orbit Timer Controller"] }
+def version() { return ["V4.0", "Requires Bhyve Orbit Timer Controller"] }
 // End Version Information
 
 import groovy.time.*
 import java.text.SimpleDateFormat;
 
-String getAppImg(imgName) 		{ return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/master/images/$imgName" }
+String getAppImg(imgName) 		{ return "https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveTimer/beta/images/$imgName" }
 
 metadata {
     definition (name: "Orbit Bhyve Sprinkler Timer", namespace: "kurtsanders", author: "kurt@kurtsanders.com") {
         capability "Refresh"
         capability "Sensor"
         capability "Battery"
-        capability "Switch Level"
         capability "Valve"
-        capability "Power"
 
-        attribute "is_connected", "enum", ['Online','Offline']
-        attribute "firmware_version", "string"
-        attribute "hardware_version", "string"
-        attribute "schedulerFreq", "string"
-        attribute "lastupdate", "string"
-        attribute "statusText", "string"
+        attribute "battery_display", "string"
+        attribute "icon", "string"
+        attribute "is_connected", "enum", ['true','false']
         attribute "lastSTupdate", "string"
+        attribute "lastupdate", "string"
+        attribute "manual_preset_runtime_sec", "number"
         attribute "name","string"
-        attribute "sprinkler_type", "string"
-        attribute "next_start_time", "string"
         attribute "next_start_programs", "string"
-        attribute "runmode","string"
         attribute "next_start_time", "string"
-        attribute "next_start_programs", "string"
-        attribute "start_times", "string"
-        attribute "rain_icon", "string"
         attribute "presetRuntime", "number"
+        attribute "programs", "string"
+        attribute "rain_icon", "string"
+        attribute "runmode", "enum", ["auto, manual"]
+        attribute "schedulerFreq", "string"
+        attribute "sprinkler_type", "string"
+        attribute "start_times", "string"
+        attribute "statusText", "string"
         attribute "updown", "number"
         attribute "water_volume_gal", "number"
-        attribute "battery_display", "string"
 
         command "setLevelUp"
         command "setLevelDown"
@@ -93,8 +90,8 @@ metadata {
             tileAttribute("banner", key: "SECONDARY_CONTROL") {
                 attributeState("default", label:'${currentValue}')
             }
-            tileAttribute("device.level", key: "SLIDER_CONTROL") {
-                attributeState "level", action:"switch level.setLevel", defaultState: true
+            tileAttribute("device.manual_preset_runtime_sec", key: "SLIDER_CONTROL") {
+                attributeState "level", action:"setManual_preset_runtime_sec", defaultState: true
 //                attributeState "level", action:"switch level.setLevel", defaultState: true
             }
             /*
@@ -116,11 +113,14 @@ metadata {
         */
         // Network Connected Status , icon: getAppImg('icons/ht25.png')
         standardTile("is_connected", "device.is_connected",  width: 2, height: 2, decoration: "flat" ) {
-            state "Offline", label: 'Offline' , backgroundColor: "#e86d13", icon:"st.Health & Wellness.health9"
-            state "Online",  label: 'Online'  , backgroundColor: "#00a0dc", icon:"st.Health & Wellness.health9"
+            state "false", label: 'Offline' , backgroundColor: "#e86d13", icon:"st.Health & Wellness.health9"
+            state "true",  label: 'Online'  , backgroundColor: "#00a0dc", icon:"st.Health & Wellness.health9"
         }
-        standardTile("icon", "refresh", width: 2, height: 2, decoration: "flat") {
-            state "default", action:"refresh.refresh", icon: getAppImg('icons/ht25.jpg')
+        standardTile("icon", "icon", width: 2, height: 2, decoration: "flat") {
+            state "default", 	action:"refresh", 	icon: getAppImg('icons/bhyve-b.jpg')
+            state "1", 			action:"refresh", 	icon: getAppImg('icons/ht-1.jpg')
+            state "6", 			action:"refresh", 	icon: getAppImg('icons/ht-6.jpg')
+            state "12", 		action:"refresh", 	icon: getAppImg('icons/ht-12.jpg')
         }
         standardTile("rain_icon", "rain_icon", width: 1, height: 1, decoration: "flat") {
             state "sun",   icon:"st.custom.wuk.clear"
@@ -129,11 +129,8 @@ metadata {
         valueTile("name", "device.name", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Timer Name\n${currentValue}'
         }
-        valueTile("firmware_version", "device.firmware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Firmware\n${currentValue}'
-        }
-        valueTile("hardware_version", "device.hardware_version", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Hardware\n${currentValue}'
+        valueTile("programs", "device.programs", width: 6, height: 2, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}'
         }
         standardTile("battery_display", "device.battery_display", width: 2, height: 2, decoration: "flat", wordWrap: true) {
             state "default",   icon: getAppImg('icons/battery-na.jpg')
@@ -174,24 +171,24 @@ metadata {
             state "default", label: 'Refresh Auto\n${currentValue} min(s)'
         }
         valueTile("lastupdate", "device.lastupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'b•hyve™ last connected at\n${currentValue}', action: "refresh"
+            state "default", label: '${currentValue}', action: "refresh"
         }
-        valueTile("lastSTupdate", "device.lastSTupdate", width: 5, height: 1, decoration: "flat", wordWrap: true) {
+        valueTile("lastSTupdate", "device.lastSTupdate", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}', action:"refresh"
         }
         valueTile("next_start_time", "device.next_start_time", width: 4, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Duration to Start\n${currentValue}'
         }
         valueTile("start_times", "device.start_times", width: 3, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Freq Start Time\n${currentValue}'
+            state "default", label: 'Start Time(s)\n${currentValue}'
         }
         valueTile("next_start_programs", "device.next_start_programs", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Next Start Pgm\n${currentValue}'
         }
-        valueTile("power", "device.power", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-            state "power", label: 'Gallons Used\n${currentValue}'
+        valueTile("water_volume_gal", "device.water_volume_gal", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "water_volume_gal", label: 'Gallons Used\n${currentValue}'
         }
-        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 2, height: 1) {
+        standardTile("refresh", "refresh", inactiveLabel: false, decoration: "flat", width: 1, height: 1) {
             state "default", label: 'Refresh', action:"refresh.refresh", icon:"st.secondary.refresh"
         }
         main(["bigtile"])
@@ -201,21 +198,20 @@ metadata {
                 "battery_display",
                 "icon",
                 "is_connected",
-                "power",
+                "water_volume_gal",
                 "next_start_time",
                 "start_times",
                 "rain_icon",
                 "presetRuntime",
                 "run_mode",
-                "firmware_version",
                 "sprinkler_type",
                 "next_start_programs",
-                "hardware_version",
                 "schedulerFreq",
                 "lastupdate",
-                "refresh",
                 "lastSTupdate",
-                "battery"
+                "refresh",
+                "battery",
+                "programs"
 
             ]
         )
@@ -249,8 +245,8 @@ def off() {
 }
 
 def setLevel(level, rate = null) {
-    log.info "Orbit B•Hyve™ Sprinkler Timer Device level was ${device.latestValue("level")} and is now ${level}"
-    sendEvent(name: "level", value: level)
+    log.info "Orbit B•Hyve™ Sprinkler Timer Device level was ${device.latestValue("manual_preset_runtime_sec")} and is now ${level}"
+    sendEvent(name: "manual_preset_runtime_sec", value: level)
     sendEvent(name: "updown", value: level)
 }
 
