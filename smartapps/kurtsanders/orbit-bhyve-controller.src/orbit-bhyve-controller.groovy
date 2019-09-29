@@ -471,51 +471,30 @@ def watering_battery_event(d,bhyve_valve_state=null,battery_percent=null) {
 
 
 def allDeviceStatus() {
-    log.debug "allDeviceStatus(): Start Routine"
-    def children = app.getChildDevices()
-    log.debug "children = ${children}"
-    def thisdevice
-    def d
-    def resp = []
-    def map = []
-    def id
-    //    log.debug "This SmartApp '$app.name' has ${children.size()} b•hyve™ devices"
-    thisdevice = children.findAll { it.typeName }.sort { a, b -> a.deviceNetworkId <=> b.deviceNetworkId }.each {
-        d = getChildDevice(it.deviceNetworkId)
-        if(d.latestValue('type')=="sprinkler_timer") {
-            resp << [
-                'deviceNetworkId': it.deviceNetworkId,
-                'name'			: it.name,
-                'valve'			: d.latestValue('valve'),
-                'switchlevel'	: d.latestValue('level')
-            ]
+    def results = [:]
+//    children.findAll { it.typeName }.sort{ a, b -> a.name <=> b.name }.each{
+    app.getChildDevices().each{
+        def d = getChildDevice(it.deviceNetworkId)
+        def type = d.latestValue('type')
+        if (!results.containsKey(type)) {
+            results[type] = []
         }
-    }
-    return resp
+        results[type].add(
+            [
+                name 						: it.name,
+                type 						: it.typeName,
+                valve						: d.latestValue('valve'),
+                id							: d.latestValue('id'),
+                manual_preset_runtime_min	: d.latestValue('manual_preset_runtime_min')
+            ]
+        )
+        }
+    return JsonOutput.toJson(results)
 }
 
 def appTouchHandler(evt="") {
     log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
-    def data = allDeviceStatus()
-    log.debug "data = ${data}"
-    data.each{k,v->
-        log.info "{k}: ${v}"
-    }
-    return
     main()
-    return
-    OrbitGet("devices").each {
-        def tz
-        tz = TimeZone.getTimeZone(state.timezone)
-        // tz = location.timeZone
-        def date = new Date().format('EEE MMM d, h:mm a', tz)
-        def next_start_time_local = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status.next_start_time).format('EEE MMM d, h:mm a', tz)
-
-        def rainDelayDT = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status.next_start_time).format("yyyy-MM-dd'T'HH:mm:ssX", tz)
-        log.debug "Local Time is ${date}. The sprinkler is rain delayed to ${next_start_time_local} which is ${durationFromNow(rainDelayDT)}"
-    }
-    return
-
 }
 
 def refresh() {
@@ -582,6 +561,8 @@ def updateTiles(data) {
 
                 d.sendEvent(name:"lastupdate", 		value: "Station ${station} last connected at\n${convertDateTime(it.last_connected_at)}", displayed: false)
                 d.sendEvent(name:"name", 			value: it.name, 							displayed: false)
+                d.sendEvent(name:"type", 			value: it.type, 							displayed: false)
+                d.sendEvent(name:"id",	 			value: it.id, 								displayed: false)
                 d.sendEvent(name:"is_connected", 	value: it.is_connected, 					displayed: false)
                 d.sendEvent(name:"icon",		 	value: it.num_stations, 					displayed: false)
 

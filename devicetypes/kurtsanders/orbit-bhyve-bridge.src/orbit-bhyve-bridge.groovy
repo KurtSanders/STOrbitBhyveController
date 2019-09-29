@@ -26,6 +26,8 @@ metadata {
         capability "Sensor"
 
         attribute "is_connected", "enum", ['true','false']
+        attribute "id", "string"
+        attribute "type", "string"
         attribute "firmware_version", "string"
         attribute "hardware_version", "string"
         attribute "schedulerFreq", "string"
@@ -43,6 +45,12 @@ metadata {
         }
         valueTile("icon", "icon", width: 1, height: 1, decoration: "flat") {
             state "default", icon: getAppImg('icons/bh1.png')
+        }
+        valueTile("type", "type", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}'
+        }
+        valueTile("id", "id", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}'
         }
         valueTile("firmware_version", "device.firmware_version", width: 3, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: 'Firmware\n${currentValue}'

@@ -30,6 +30,7 @@ metadata {
 
         attribute "battery_display", "string"
         attribute "icon", "string"
+        attribute "id", "string"
         attribute "is_connected", "enum", ['true','false']
         attribute "lastSTupdate", "string"
         attribute "lastupdate", "string"
@@ -46,7 +47,7 @@ metadata {
         attribute "start_times", "string"
         attribute "station", "string"
         attribute "statusText", "string"
-        attribute "updown", "number"
+        attribute "type", "string"
         attribute "water_volume_gal", "number"
 
         command "setLevel"
@@ -104,7 +105,13 @@ metadata {
             state "rain",  icon:"st.custom.wu1.chancerain", backgroundColor: "#44b621"
         }
         valueTile("name", "device.name", width: 2, height: 1, decoration: "flat", wordWrap: true) {
-            state "default", label: 'Timer Name\n${currentValue}'
+            state "default", label: '${currentValue}'
+        }
+        valueTile("type", "type", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}'
+        }
+        valueTile("id", "id", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}'
         }
         valueTile("programs", "device.programs", width: 6, height: 2, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}'
