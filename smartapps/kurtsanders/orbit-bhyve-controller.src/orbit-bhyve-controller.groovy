@@ -621,7 +621,7 @@ def updateTiles(data) {
                         d.sendEvent(name:"rain_icon", 			value: "rain", displayed: false )
                         def rainDelayDT = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status.next_start_time).format("yyyy-MM-dd'T'HH:mm:ssX", location.timeZone)
                         d.sendEvent(name:"next_start_time", value: durationFromNow(rainDelayDT), displayed: false)
-                        banner = "${it.status.rain_delay}hr Rain Delay - ${next_start_programs} ${convertDateTime(it.status.next_start_time)}"
+                        banner = "${it.status.rain_delay}hr Rain Delay - ${convertDateTime(it.status.next_start_time)}"
                     } else {
                         d.sendEvent(name:"rain_icon", 		value: "sun", displayed: false )
                         def next_start_time_local = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status.next_start_time).format("yyyy-MM-dd'T'HH:mm:ssX", location.timeZone)
