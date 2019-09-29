@@ -252,14 +252,14 @@ def APIPage() {
             if (state.endpoint) {
                 // Added additional logging from @kurtsanders
                 log.info "##########################################################################################"
-                log.info "secret=${state.endpointSecret}"
-                log.info "smartAppURL=${state.endpointURL}"
+                log.info "ST_SECRET=${state.endpointSecret}"
+                log.info "ST_SMARTAPPURL=${state.endpointURL}"
                 log.info "##########################################################################################"
                 log.info "The API has been setup. Please enter the next two strings exactly as shown into the .env file which is in your Raspberry Pi's Bhyve app directory."
                 log.info "##########################################################################################"
                 paragraph "API has been setup. Please enter the following two strings in your '.env' file in your Raspberry Pi bhyve directory."
-                paragraph "smartAppURL=${state.endpointURL}"
-                paragraph "secret=${state.endpointSecret}"
+                paragraph "ST_SMARTAPPURL=${state.endpointURL}"
+                paragraph "ST_SECRET=${state.endpointSecret}"
                 href "disableAPIPage", title: "Disable API (Only use this if you want to generate a new secret)", description: ""
             }
             else {
@@ -276,8 +276,8 @@ def enableAPIPage() {
             if (initializeAppEndpoint()) {
                 // Added additional logging from @kurtsanders
                 log.info "##########################################################################################"
-                log.info "secret=${state.endpointSecret}"
-                log.info "smartAppURL=${state.endpointURL}"
+                log.info "ST_SECRET=${state.endpointSecret}"
+                log.info "ST_SMARTAPPURL=${state.endpointURL}"
                 log.info "##########################################################################################"
                 log.info "The API has been setup. Please enter the next two strings exactly as shown into the .env file which is in your Raspberry Pi's Bhyve app directory."
                 log.info "##########################################################################################"
@@ -344,19 +344,24 @@ def webEvent() {
             case 'watering_events':
             // data : [id:5d7cdad04f0cd2f6aa82f1d9, updated_at:2019-09-14T17:13:42.404Z, event:watering_events, precipitation:0, created_at:2019-09-14T12:19:28.417Z, device_id:5ba4d2694f0c7f7ff7b39480, date:2019-09-14T00:00:00.000Z, irrigation:[budget:100, status:complete, station:1, program:manual, water_volume_gal:33, program_name:manual, start_time:2019-09-14T17:03:42.000Z, run_time:10]]
             def i = data.irrigation
-            def d = getChildDevice(DTHDNI(data.device_id))
+            def d = getChildDevice(DTHDNI("${data.device_id}:${i.station}"))
+            if (d) {
             if (d.latestValue('valve')=='open') {
-                d.sendEvent(name:"power", 		value: "${i.water_volume_gal?:0}", descriptionText:"${i.water_volume_gal?:0} gallons")
-                d.sendEvent(name:"run_mode", 	value: "${i.program}", displayed: false)
-                d.sendEvent(name:"banner", 		value: "Active Watering - ${i.water_volume_gal?:0} gals at ${timestamp('short') }", displayed: false )
+                    d.sendEvent(name:"water_volume_gal", 	value: "${i.water_volume_gal?:0}", descriptionText:"${i.water_volume_gal?:0} gallons")
+                    d.sendEvent(name:"run_mode", 			value: "${i.program}", displayed: false)
+                    d.sendEvent(name:"banner", 				value: "Active Watering - ${i.water_volume_gal?:0} gals at ${timestamp('short') }", displayed: false )
             } else {
-                d.sendEvent(name:"power", value: 0, descriptionText:"Gallons", displayed: false )
-                d.sendEvent(name:"level", value: i.run_time, displayed: false)
+                    d.sendEvent(name:"water_volume_gal", 	value: 0, descriptionText:"Gallons", displayed: false )
+                    d.sendEvent(name:"level", 				value: i.run_time, displayed: false)
+            }
+            } else {
+                log.error "Web watering_events: Invalid device DNI: ${data}"
             }
             break
             case 'low_battery':
             case 'device_connected':
-            send_message(data.device_id,data.event.replaceAll("_"," ").toUpperCase())
+            def d = getChildDevice(DTHDNI("${data.device_id}:1"))
+            send_message(d,data.event.replaceAll("_"," ").toUpperCase())
             break
             case 'flow_sensor_state_changed':
             break
@@ -364,22 +369,23 @@ def webEvent() {
             // change_mode {"mode":"off","device_id":"5ba4d2694f0c7f7ff7b39480","event":"change_mode"}
             // change_mode {"event":"change_mode","delay":null,"mode":"off","device_id":"5ba4d2694f0c7f7ff7b39480"}
             // change_mode {"event":"change_mode","mode":"manual","program":null,"stations":[{"station":1,"run_time":2}],"device_id":"5ba4d2694f0c7f7ff7b39480"}
-            def d = getChildDevice(DTHDNI(data.device_id))
+            def d = getChildDevice(DTHDNI("${data.device_id}:${data.stations.station?:1}"))
             if (d && data.containsKey("mode")) {
                 d.sendEvent(name:"run_mode", value: data.mode, displayed: false)
             }
             break
             case 'watering_complete':
             // watering_complete {"event":"watering_complete","program":null,"current_station":null,"run_time":null,"started_watering_station_at":null,"rain_sensor_hold":null,"device_id":"5ba4d2694f0c7f7ff7b39480"}
-            def d = getChildDevice(DTHDNI(data.device_id))
+            def d = getChildDevice(DTHDNI("${data.device_id}:${data.current_station?:1}"))
             d.sendEvent(name: "banner", value: "Watering Complete", "displayed":false)
-            watering_battery_event(data.device_id,'closed')
+            watering_battery_event(d,'closed')
             runIn(2, "refresh")
             d.sendEvent(name: "banner", value: "Cloud Refresh Requested..", "displayed":false)
             break
             case 'watering_in_progress_notification':
             // watering_in_progress_notification {"event":"watering_in_progress_notification","mode":null,"program":"manual","stations":null,"current_station":1,"run_time":1,"started_watering_station_at":"2019-09-09T00:05:50.000Z","rain_sensor_hold":false,"device_id":"5ba4d2694f0c7f7ff7b39480"}
-            watering_battery_event(data.device_id,'open')
+            def d = getChildDevice(DTHDNI("${data.device_id}:${data.current_station?:1}"))
+            watering_battery_event(d,'open')
             runIn(2, "refresh")
             break
             case 'program_changed':
@@ -425,6 +431,7 @@ def send_message(d , event) {
 }
 
 def sendPushoverMessage(data) {
+    log.info "Pushover() ${random()} at ${timestamp()}"
     Map msgObj = [
         title: app.name, //Optional and can be what ever
         message: data, //Required (HTML markup requires html: true, parameter)
@@ -741,8 +748,10 @@ def durationFromNow(dt,showOnly=null) {
     }
     if (duration) {
         rc = duration
+        log.debug "duration = ${duration}"
         switch (showOnly) {
             case 'minutes':
+            log.debug rc =~ /\d+(?=\Wminutes)/
             return (rc =~ /\d+(?=\Wminutes)/)[0]
             break
             default:
