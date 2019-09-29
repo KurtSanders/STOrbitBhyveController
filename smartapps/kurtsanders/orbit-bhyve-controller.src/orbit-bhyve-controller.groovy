@@ -123,8 +123,8 @@ def mainOptions() {
                 install: true,
                 uninstall: false)
     {
-        section("API Setup") {
-            href name: "APIPageLink", title: "API Setup (Optional or Required if Using Rpi API)", description: "", page: "APIPage"
+        section("API Setup - Optional") {
+            href name: "APIPageLink", title: "API Setup (If Using Raspberry Pi API 4.0)", description: "This function has not been released yet", page: "APIPage"
         }
         section("Orbit Timer Refresh/Polling Update Interval") {
             input ( name: "schedulerFreq",
@@ -473,6 +473,7 @@ def watering_battery_event(d,bhyve_valve_state=null,battery_percent=null) {
 def allDeviceStatus() {
     log.debug "allDeviceStatus(): Start Routine"
     def children = app.getChildDevices()
+    log.debug "children = ${children}"
     def thisdevice
     def d
     def resp = []
@@ -495,6 +496,12 @@ def allDeviceStatus() {
 
 def appTouchHandler(evt="") {
     log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
+    def data = allDeviceStatus()
+    log.debug "data = ${data}"
+    data.each{k,v->
+        log.info "{k}: ${v}"
+    }
+    return
     main()
     return
     OrbitGet("devices").each {
@@ -591,9 +598,12 @@ def updateTiles(data) {
                     d = getChildDevice("${DTHDNI(it.id)}:${station}")
                     log.info "Procesing Orbit Station #${station}: Zone Name: ${zoneData.name}"
 
-                    d.sendEvent(name:"presetRuntime", 		value: it.manual_preset_runtime_sec/60, displayed: false )
-                    d.sendEvent(name:"rain_delay", 			value: it.status.rain_delay )
-                    d.sendEvent(name:"run_mode", 			value: it.status.run_mode, displayed: false)
+					def presetWateringInt = (it.manual_preset_runtime_sec.toInteger()/60)
+                    d.sendEvent(name:"presetRuntime", 				value: presetWateringInt, displayed: false )
+                    d.sendEvent(name:"manual_preset_runtime_min", 	value: presetWateringInt, displayed: false )
+                    d.sendEvent(name:"rain_delay", 					value: it.status.rain_delay )
+                    d.sendEvent(name:"run_mode", 					value: it.status.run_mode, displayed: false)
+                    d.sendEvent(name:"station", 					value: station, displayed: false)
 
                     next_start_programs = it.status.next_start_programs.join(', ').toUpperCase()
                     d.sendEvent(name:"next_start_programs", value: "Station ${station}: ${next_start_programs}", displayed: false)
@@ -658,7 +668,7 @@ def updateTiles(data) {
                             start_timesList = []
                             if (y) {
                                 it.start_times.each {
-                                    start_timesList << Date.parse("HH:mm",it).format("hh:mm a").replace("AM", "am").replace("PM","pm")
+                                    start_timesList << Date.parse("HH:mm",it).format("h:mm a").replace("AM", "am").replace("PM","pm")
                                 }
                                 switch (it.frequency.type) {
                                     case 'interval':
@@ -952,32 +962,29 @@ def add_bhyve_ChildDevice() {
             switch (it.type) {
                 case 'sprinkler_timer':
                 def numZones = it.zones.size()
-                log.info "Orbit device (${index}): ${it.name} is a ${it.type} with ${it.num_stations} stations, ${numZones} zone(s) and last connected at: ${convertDateTime(it.last_connected_at)}"
+                log.info "Orbit device (${index}): ${it.name} is a ${it.type}-${it.hardware_version} with ${it.num_stations} stations, ${numZones} zone(s) and last connected at: ${convertDateTime(it.last_connected_at)}"
                 for (i = 0 ; i < it.zones.size(); i++) {
                     data = [
                         DTHid 	: "${DTHDNI(it.id)}:${it.zones[i].station}",
                         DTHname : DTHName(it.type.split(" |-|_").collect{it.capitalize()}.join(" ")),
                         DTHlabel: "Bhyve ${it.zones[i].name}"
                     ]
-                    log.debug "Creating Orbit Timer station #${it.zones[i].station} - ${it.zones[i].name}"
                     createDevice(data)
                 }
                 break
                 case 'bridge':
-                log.debug "Creating Orbit Bridge - ${it.name}"
                 data = [
-                    DTHid	: 	"${DTHDNI(it.id)}:${0}",
+                    DTHid	: 	"${DTHDNI(it.id)}:0",
                     DTHname	:	DTHName(it.type.split(" |-|_").collect{it.capitalize()}.join(" ")),
                     DTHlabel: 	"Bhyve ${it.name}"
                 ]
                 createDevice(data)
                 break
                 default:
-                    log.error "Skipping: Unknown b•hyve™ device type ${it.type} for ${it.name}"
+                    log.error "Skipping: Unknown Orbit b•hyve deviceType '${it?.type}' for '${it?.name}'"
                     data = [:]
                 break
             }
-            // Check to add any new bhyve device
         }
     } else {
         return false
@@ -986,18 +993,21 @@ def add_bhyve_ChildDevice() {
 }
 
 def createDevice(data) {
-    log.debug "createDevice(data): data = ${data}"
-    if (!getChildDevice(data.DTHid)) {
-        log.debug "Creating a NEW bhyve '${data.DTHname}' device as '${data.DTHlabel}' with DNI: ${data.DTHid}"
+    def d = getChildDevice(data.DTHid)
+    if (d) {
+        log.info "VERIFIED DTH: '${d.name}' is DNI:'${d.deviceNetworkId}'"
+        return true
+    } else {
+        log.info "MISSING DTH: Creating a NEW Orbit device for '${data.DTHname}' device as '${data.DTHlabel}' with DNI: ${data.DTHid}"
         try {
             addChildDevice(DTHnamespace(), data.DTHname, data.DTHid, null, ["name": "${data.DTHlabel}", label: "${data.DTHlabel}", completedSetup: true])
         } catch(e) {
             log.error "The Device Handler '${data.DTHname}' was not found in your 'My Device Handlers', Error-> '${e}'.  Please install this DTH device in the IDE's 'My Device Handlers'"
+            return false
         }
-        // log.debug "Success: Added a new device named '${DTHlabel}' as DTH:'${DTHname}' with DNI:'${DTHid}'"
-    } else {
-        // log.debug "Verification: Device exists named '${DTHlabel}' as DTH:'${DTHname}' with DNI:'${DTHid}'"
+        log.info "Success: Added a new device named '${DTHlabel}' as DTH:'${DTHname}' with DNI:'${DTHid}'"
     }
+    return true
 }
 
 def remove_bhyve_ChildDevice() {
