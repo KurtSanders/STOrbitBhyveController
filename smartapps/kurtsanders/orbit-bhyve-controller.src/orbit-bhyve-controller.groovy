@@ -17,6 +17,7 @@
 */
 import groovy.time.*
 import java.text.SimpleDateFormat;
+import groovy.json.JsonOutput
 
 String appVersion()	 	{ return "4.00" }
 String appModified() 	{ return "2019-09-28" }
@@ -176,21 +177,15 @@ def notificationOptions() {
                 install: false,
                 uninstall: false)
     {
-        section("Enable Pushover Support:") {
-            input ("pushoverEnabled", "bool", title: "Use Pushover Integration", required: false, submitOnChange: true)
-            if(settings?.pushoverEnabled == true) {
-                if(state?.isInstalled) {
-                    if(!atomicState?.pushoverManager) {
-                        paragraph "If this is the first time enabling Pushover than leave this page and come back if the devices list is empty"
-                        pushover_init()
-                    } else {
-                        input "pushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", groupedOptions: getPushoverDevices(), multiple: true, required: false, submitOnChange: true
-                        if(settings?.pushoverDevices) {
-                            input "pushoverSound", "enum", title: "Notification Sound (Optional)", description: "Tap to select", defaultValue: "pushover", required: false, multiple: false, submitOnChange: true, options: getPushoverSounds()
+        section("Enable Pushover Service Support:") {
+            input ("pushoverEnabled", "bool", title: "Use Pushover Service Integration", required: false, submitOnChange: true)
+            if (pushoverEnabled) {
+                input "pushoverUser", "string", title: "Enter Pushover User API Key", description: "Enter User API Key", required: pushoverEnabled, submitOnChange: true
+                input "pushoverToken", "string", title: "Enter Pushover Application API Key", description: "Enter Application API Key", required: pushoverEnabled, submitOnChange: true
+                if ((pushoverUserAPI) && (pushoverUserAPI)) {
+                    input "pushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", options: findMyPushoverDevices(), multiple: true, required: pushoverEnabled
                         }
                     }
-                } else { paragraph "New Install Detected!!!\n\n1. Press Done to Finish the Install.\n2. Goto the Automations Tab at the Bottom\n3. Tap on the SmartApps Tab above\n4. Select ${app?.getLabel()} and Resume configuration", state: "complete" }
-            }
         }
 
         section("SMS & Push Notifications for Timer On/Off activity?") {
@@ -296,7 +291,6 @@ def initialize() {
     setScheduler(schedulerFreq)
     subscribe(app, appTouchHandler)
     runIn(15, main)
-    pushover_init()
 }
 
 def updated() {
@@ -383,8 +377,10 @@ def webEvent() {
             d.sendEvent(name: "banner", value: "Cloud Refresh Requested..", "displayed":false)
             break
             case 'watering_in_progress_notification':
-            // watering_in_progress_notification {"event":"watering_in_progress_notification","mode":null,"program":"manual","stations":null,"current_station":1,"run_time":1,"started_watering_station_at":"2019-09-09T00:05:50.000Z","rain_sensor_hold":false,"device_id":"5ba4d2694f0c7f7ff7b39480"}
+            // {"event":"watering_in_progress_notification","program":"b","current_station":1,"run_time":19,"started_watering_station_at":"2019-09-30T21:30:18.000Z","rain_sensor_hold":false,"device_id":"5b7b488a4f0c7f7ff7b104d3"}
             def d = getChildDevice(DTHDNI("${data.device_id}:${data.current_station?:1}"))
+            log.debug "${data.device_id}:${data.current_station?:1}"
+            log.debug "watering_in_progress_notification: ${d}"
             watering_battery_event(d,'open')
             runIn(2, "refresh")
             break
@@ -411,51 +407,13 @@ def webEvent() {
     }
 }
 
-def send_message(d , event) {
-    def message
-    def durationTC
-    String duration
-    if (event.toLowerCase().contains('closed')) {
-        Date lastOpen = Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",state.valveLastOpenEpoch[d.deviceNetworkId])
-        use (TimeCategory) {
-            durationTC = new Date() - lastOpen
-        }
-        duration = durationTC
-        message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()} and was actively watering for ${duration.replaceAll(/\.\d+/,'')}!"
-    } else {
-        message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()}!"
-    }
-    if (sendPushEnabled) 	sendPush(message)
-    if (sendSMSEnabled) 	sendSms(phone, message)
-    if (pushoverEnabled) 	sendPushoverMessage(message)
-}
-
-def sendPushoverMessage(data) {
-    log.info "Pushover() ${random()} at ${timestamp()}"
-    Map msgObj = [
-        title: app.name, //Optional and can be what ever
-        message: data, //Required (HTML markup requires html: true, parameter)
-        priority: 0,  //Optional
-        retry: 30, //Requried only when sending with High-Priority
-        expire: 10800, //Requried only when sending with High-Priority
-        html: false //Optional see: https://pushover.net/api#html
-//        sound: settings?.pushoverSound //Optional
-//        url: "", //Optional
-//        url_title: "" //Optional
-    ]
-    /* buildPushMessage(List param1, Map param2, Boolean param3)
-        Param1: List of pushover Device Names
-        Param2: Map msgObj above
-        Param3: Boolean add timeStamp
-    */
-    buildPushMessage(settings?.pushoverDevices, msgObj, true) // This method is part of the required code block
-}
-
 def watering_battery_event(d,bhyve_valve_state=null,battery_percent=null) {
     def st_valve_state = d.latestValue('valve')
+    log.debug "st_valve_state = ${st_valve_state}"
     if ( st_valve_state != bhyve_valve_state) {
         log.info "${d.name}: Valve state of '${st_valve_state}' CHANGED to '${bhyve_valve_state.toUpperCase()}'"
         d.sendEvent(name:"valve", value: bhyve_valve_state )
+        log.debug "Sending Message from watering_battery_event"
         send_message(d,"Valve: ${bhyve_valve_state.toUpperCase()}")
         if ((st_valve_state != bhyve_valve_state) && (bhyve_valve_state == 'open')) {
             state.valveLastOpenEpoch << ["${d.deviceNetworkId}" : now()]
@@ -636,6 +594,7 @@ def updateTiles(data) {
                         if (byhveValveState == 'open') {
                             state.valveLastOpenEpoch["${d.deviceNetworkId}"] = it.status.watering_status.started_watering_station_at
                         }
+                        log.debug "Sending Message from UpdateTiles()"
                         send_message(d,"Valve: ${byhveValveState.toUpperCase()}")
                     }
 
@@ -742,7 +701,7 @@ def durationFromNow(dt,showOnly=null) {
         log.debug "duration = ${duration}"
         switch (showOnly) {
             case 'minutes':
-            log.debug rc =~ /\d+(?=\Wminutes)/
+ 			log.debug "rc = ${rc}"
             return (rc =~ /\d+(?=\Wminutes)/)[0]
             break
             default:
@@ -1058,18 +1017,103 @@ private initializeAppEndpoint() {
 	return state.endpoint
 }
 
-//PushOver-Manager Input Generation Functions
-private getPushoverSounds(){return (Map) atomicState?.pushoverManager?.sounds?:[:]}
-private getPushoverDevices(){List opts=[];Map pmd=atomicState?.pushoverManager?:[:];pmd?.apps?.each{k,v->if(v&&v?.devices&&v?.appId){Map dm=[:];v?.devices?.sort{}?.each{i->dm["${i}_${v?.appId}"]=i};addInputGrp(opts,v?.appName,dm);}};return opts;}
-private inputOptGrp(List groups,String title){def group=[values:[],order:groups?.size()];group?.title=title?:"";groups<<group;return groups;}
-private addInputValues(List groups,String key,String value){def lg=groups[-1];lg["values"]<<[key:key,value:value,order:lg["values"]?.size()];return groups;}
-private listToMap(List original){original.inject([:]){r,v->r[v]=v;return r;}}
-private addInputGrp(List groups,String title,values){if(values instanceof List){values=listToMap(values)};values.inject(inputOptGrp(groups,title)){r,k,v->return addInputValues(r,k,v)};return groups;}
-private addInputGrp(values){addInputGrp([],null,values)}
-//PushOver-Manager Location Event Subscription Events, Polling, and Handlers
-public pushover_init(){subscribe(location,"pushoverManager",pushover_handler);pushover_poll()}
-public pushover_cleanup(){state?.remove("pushoverManager");unsubscribe("pushoverManager");}
-public pushover_poll(){sendLocationEvent(name:"pushoverManagerCmd",value:"poll",data:[empty:true],isStateChange:true,descriptionText:"Sending Poll Event to Pushover-Manager")}
-public pushover_msg(List devs,Map data){if(devs&&data){sendLocationEvent(name:"pushoverManagerMsg",value:"sendMsg",data:data,isStateChange:true,descriptionText:"Sending Message to Pushover Devices: ${devs}");}}
-public pushover_handler(evt){Map pmd=atomicState?.pushoverManager?:[:];switch(evt?.value){case"refresh":def ed = evt?.jsonData;String id = ed?.appId;Map pA = pmd?.apps?.size() ? pmd?.apps : [:];if(id){pA[id]=pA?."${id}"instanceof Map?pA[id]:[:];pA[id]?.devices=ed?.devices?:[];pA[id]?.appName=ed?.appName;pA[id]?.appId=id;pmd?.apps = pA;};pmd?.sounds=ed?.sounds;break;case "reset":pmd=[:];break;};atomicState?.pushoverManager=pmd;}
-private buildPushMessage(List devices,Map msgData,timeStamp=false){if(!devices||!msgData){return};Map data=[:];data?.appId=app?.getId();data.devices=devices;data?.msgData=msgData;if(timeStamp){data?.msgData?.timeStamp=new Date().getTime()};pushover_msg(devices,data);}
+
+// ======= Pushover Routines ============
+
+def send_message(d, event) {
+    def message
+    def durationTC
+    String duration
+    if (event.toLowerCase().contains('closed')) {
+        Date lastOpen = Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",state.valveLastOpenEpoch[d.deviceNetworkId])
+        use (TimeCategory) {
+            durationTC = new Date() - lastOpen
+        }
+        duration = durationTC
+        message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()} and was actively watering for ${duration.replaceAll(/\.\d+/,'')}!"
+    } else {
+        message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()}!"
+    }
+    if (sendPushEnabled) 	{sendPush(message)}
+    if (sendSMSEnabled) 	{sendSms(phone, message)}
+    if (pushoverEnabled) 	{sendPushoverMessage(message)}
+}
+
+def sendPushoverMessage(msgData) {
+    log.info "sendPushoverMessage() ${random()} at ${timestamp()}"
+    Map params = [
+        uri					: "https://api.pushover.net/1/messages.json",
+        requestContentType	: "application/json"
+    ]
+    Map bodyx = [
+        token			: pushoverToken.trim() as String,
+        user			: pushoverUser.trim() as String,
+        title			: app.name as String,
+        message			: msgData as String,
+        device			: pushoverDevices.join(',') as String
+    ]
+    params.body = new JsonOutput().toJson(bodyx)
+    include 'asynchttp_v1'
+    asynchttp_v1.post(pushoverResponse, params)
+    return
+}
+
+def findMyPushoverDevices() {
+    Boolean validated = false
+    List pushoverDevices = []
+    Map params = [
+        uri: "https://api.pushover.net",
+        path: "/1/users/validate.json",
+        contentType: "application/json",
+        requestContentType: "application/json",
+        body: [token: pushoverToken.trim() as String, user: pushoverUser.trim() as String] as Map
+    ]
+    try {
+        httpPostJson(params) { resp ->
+            if(resp?.status != 200) {
+                log.error "Received HTTP error ${resp.status}. Check your User and App Pushover keys!"
+            } else {
+                if(resp?.data) {
+                    if(resp?.data?.status && resp?.data?.status == 1) validated = true
+                    if(resp?.data?.devices) {
+                        log.debug "Found (${resp?.data?.devices?.size()}) Pushover Devices..."
+                        pushoverDevices = resp?.data?.devices
+                    } else {
+                        log.error "Device List is empty"
+                        pushoverDevices ['No devices found, Check your User and App Pushover keys!']
+                    }
+                } else { validated = false }
+            }
+            log.debug "findMyPushoverDevices | Validated: ${validated} | Resp | status: ${resp?.status} | data: ${resp?.data}"
+        }
+    } catch (Exception ex) {
+        if(ex instanceof groovyx.net.http.HttpResponseException && ex?.response) {
+            log.error "findMyPushoverDevices HttpResponseException | Status: (${ex?.response?.status}) | Data: ${ex?.response?.data}"
+        } else log.error "An invalid key was probably entered. PushOver Server Returned: ${ex}"
+    }
+    return pushoverDevices
+}
+
+def pushoverResponse(resp, data) {
+    try {
+        Map headers = resp?.getHeaders()
+        def limit = headers["X-Limit-App-Limit"]
+        def remain = headers["X-Limit-App-Remaining"]
+        def resetDt = headers["X-Limit-App-Reset"]
+        if(resp?.status == 200) {
+            log.debug "Message Received by Pushover Server ${(remain && limit) ? " | Monthly Messages Remaining (${remain} of ${limit})" : ""}"
+        } else if (resp?.status == 429) {
+            log.warn "Couldn't Send Pushover Notification... You have reached your (${limit}) notification limit for the month"
+        } else {
+            if(resp?.hasError()) {
+                log.error "pushoverResponse: status: ${resp.status} | errorMessage: ${resp?.getErrorMessage()}"
+                log.error "Received HTTP error ${resp?.status}. Check your keys!"
+            }
+        }
+    } catch (ex) {
+        if(ex instanceof groovyx.net.http.HttpResponseException && ex?.response) {
+            def rData = (ex?.response?.data && ex?.response?.data != "") ? " | Data: ${ex?.response?.data}" : ""
+            log.error "pushoverResponse() HttpResponseException | Status: (${ex?.response?.status})${rData}"
+        } else { log.error "pushoverResponse() Exception:", ex }
+    }
+}
