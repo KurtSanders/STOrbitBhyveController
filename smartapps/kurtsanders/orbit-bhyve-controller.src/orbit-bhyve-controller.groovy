@@ -360,26 +360,28 @@ def webEvent() {
             case 'flow_sensor_state_changed':
             break
             case 'change_mode':
-            // change_mode {"mode":"off","device_id":"5ba4d2694f0c7f7ff7b39480","event":"change_mode"}
-            // change_mode {"event":"change_mode","delay":null,"mode":"off","device_id":"5ba4d2694f0c7f7ff7b39480"}
-            // change_mode {"event":"change_mode","mode":"manual","program":null,"stations":[{"station":1,"run_time":2}],"device_id":"5ba4d2694f0c7f7ff7b39480"}
-            def d = getChildDevice(DTHDNI("${data.device_id}:${data.stations.station?:1}"))
-            if (d && data.containsKey("mode")) {
+            if (!data.containsKey("mode")) return
+            def station = data.containsKey('stations')?data.stations.station:1
+            def d = getChildDevice(DTHDNI("${data.device_id}:${stations}"))
+            if (d) {
                 d.sendEvent(name:"run_mode", value: data.mode, displayed: false)
             }
             break
             case 'watering_complete':
-            // watering_complete {"event":"watering_complete","program":null,"current_station":null,"run_time":null,"started_watering_station_at":null,"rain_sensor_hold":null,"device_id":"5ba4d2694f0c7f7ff7b39480"}
-            def d = getChildDevice(DTHDNI("${data.device_id}:${data.current_station?:1}"))
+            def station = data.containsKey('stations')?data.stations.station:1
+            def d = getChildDevice(DTHDNI("${data.device_id}:${stations}"))
+            if (d) {
             d.sendEvent(name: "banner", value: "Watering Complete", "displayed":false)
             watering_battery_event(d,'closed')
             runIn(2, "refresh")
             d.sendEvent(name: "banner", value: "Cloud Refresh Requested..", "displayed":false)
+            }
             break
             case 'watering_in_progress_notification':
-            // {"event":"watering_in_progress_notification","program":"b","current_station":1,"run_time":19,"started_watering_station_at":"2019-09-30T21:30:18.000Z","rain_sensor_hold":false,"device_id":"5b7b488a4f0c7f7ff7b104d3"}
-            def d = getChildDevice(DTHDNI("${data.device_id}:${data.current_station?:1}"))
-            log.debug "${data.device_id}:${data.current_station?:1}"
+            // {"event":"watering_in_progress_notification","program":"a","current_station":1,"run_time":14,"started_watering_station_at":"2019-10-02T10:29:52.000Z",
+            // "rain_sensor_hold":false,"device_id":"5b91523c4f0c7f7ff7b28295"}
+            def d = getChildDevice(DTHDNI("${data.device_id}:${data.current_station}"))
+            log.debug "${data.device_id}:${data.current_station}"
             log.debug "watering_in_progress_notification: ${d}"
             watering_battery_event(d,'open')
             runIn(2, "refresh")
@@ -416,7 +418,7 @@ def watering_battery_event(d,bhyve_valve_state=null,battery_percent=null) {
         log.debug "Sending Message from watering_battery_event"
         send_message(d,"Valve: ${bhyve_valve_state.toUpperCase()}")
         if ((st_valve_state != bhyve_valve_state) && (bhyve_valve_state == 'open')) {
-            state.valveLastOpenEpoch << ["${d.deviceNetworkId}" : now()]
+            state.valveLastOpenEpoch << ["${d.deviceNetworkId}" : new Date()]
         }
     }
     if (battery_percent) {
@@ -702,7 +704,12 @@ def durationFromNow(dt,showOnly=null) {
         switch (showOnly) {
             case 'minutes':
  			log.debug "rc = ${rc}"
-            return (rc =~ /\d+(?=\Wminutes)/)[0]
+            def result = (rc =~ /\d+(?=\Wminutes)/)
+            log.debug "result = ${result}"
+            if (result[0]) {
+                return (result[0])
+            }
+            return (rc.replaceAll(/\.\d+/,''))
             break
             default:
 //                return (rc.replaceAll(/\.\d+/,'') )
