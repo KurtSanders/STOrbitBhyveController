@@ -18,6 +18,8 @@
 import groovy.time.*
 import java.text.SimpleDateFormat;
 import groovy.json.JsonOutput
+import groovy.json.JsonSlurper
+
 
 String appVersion()	 	{ return "4.00" }
 String appModified() 	{ return "2019-09-28" }
@@ -124,8 +126,12 @@ def mainOptions() {
                 install: true,
                 uninstall: false)
     {
-        section("API Setup - Optional") {
-            href name: "APIPageLink", title: "API Setup (If Using Raspberry Pi API 4.0)", description: "This function has not been released yet", page: "APIPage"
+        section("Raspberry Pi Server Setup for Valve Control (Optional):") {
+            input ("serverEnabled", "bool", title: "Use Raspberry Pi/Nodejs Service Integration", required: false, defaultValue: false, submitOnChange: true)
+            if (serverEnabled) {
+                input ("httpServerIP", "string", title: "Raspberry Pi/Nodejs IP:PORT", required: serverEnabled, submitOnChange: true)
+                href name: "APIPageLink", title: "API Setup", required: serverEnabled, description: (state.endpoint)?"Setup Complete":"Tap to Enable" , page: "APIPage"
+            }
         }
         section("Orbit Timer Refresh/Polling Update Interval") {
             input ( name: "schedulerFreq",
@@ -213,9 +219,8 @@ def notificationOptions() {
             input ( name	: "eventsToNotify",
                    type		: "enum",
                    title	: "Which Events",
-                   options: ['valves':'Watering','low_battery':'Low Battery','device_connected':'Device Connected'].sort(),
+                   options: ['valves':'Valves Open/Close','low_battery':'Low Battery','device_connect_state':'Device Connected/Disconnected'].sort(),
                    description: "Select Events to Notify",
-                   defaultValue: eventsToNotify?:'Tap to Select',
                    required: false,
                    multiple: true
                   )
@@ -286,11 +291,11 @@ def enableAPIPage() {
 }
 
 def initialize() {
-    state[valveLastOpenEpoch] = [:]
     add_bhyve_ChildDevice()
     setScheduler(schedulerFreq)
     subscribe(app, appTouchHandler)
-    runIn(15, main)
+    subscribe(app.getChildDevices(), "valve", valvesHandler)
+    runIn(5, main)
 }
 
 def updated() {
@@ -330,34 +335,10 @@ def webEvent() {
     Random random = new Random()
     def data = request.JSON
     if (data.containsKey("event")) {
-        log.debug "=> webEvent #${random.nextInt(1000)}: '${data.event}'-> data : ${(data.size()==2)?data.webdata:data}"
+        log.debug "=> webEvent #${random.nextInt(1000)}: '${data.event}'-> data : ${data}"
         switch(data.event) {
             case 'updatealldevices':
-            runIn(2, "updateTiles", [data: data.webdata])
-            break
-            case 'watering_events':
-            // data : [id:5d7cdad04f0cd2f6aa82f1d9, updated_at:2019-09-14T17:13:42.404Z, event:watering_events, precipitation:0, created_at:2019-09-14T12:19:28.417Z, device_id:5ba4d2694f0c7f7ff7b39480, date:2019-09-14T00:00:00.000Z, irrigation:[budget:100, status:complete, station:1, program:manual, water_volume_gal:33, program_name:manual, start_time:2019-09-14T17:03:42.000Z, run_time:10]]
-            def i = data.irrigation
-            def d = getChildDevice(DTHDNI("${data.device_id}:${i.station}"))
-            if (d) {
-            if (d.latestValue('valve')=='open') {
-                    d.sendEvent(name:"water_volume_gal", 	value: "${i.water_volume_gal?:0}", descriptionText:"${i.water_volume_gal?:0} gallons")
-                    d.sendEvent(name:"run_mode", 			value: "${i.program}", displayed: false)
-                    d.sendEvent(name:"banner", 				value: "Active Watering - ${i.water_volume_gal?:0} gals at ${timestamp('short') }", displayed: false )
-            } else {
-                    d.sendEvent(name:"water_volume_gal", 	value: 0, descriptionText:"Gallons", displayed: false )
-                    d.sendEvent(name:"level", 				value: i.run_time, displayed: false)
-            }
-            } else {
-                log.error "Web watering_events: Invalid device DNI: ${data}"
-            }
-            break
-            case 'low_battery':
-            case 'device_connected':
-            def d = getChildDevice(DTHDNI("${data.device_id}:1"))
-            send_message(d,data.event.replaceAll("_"," ").toUpperCase())
-            break
-            case 'flow_sensor_state_changed':
+            runIn(5, "updateTiles", [data: data.webdata])
             break
             case 'change_mode':
             if (!data.containsKey("mode")) return
@@ -367,68 +348,21 @@ def webEvent() {
                 d.sendEvent(name:"run_mode", value: data.mode, displayed: false)
             }
             break
-            case 'watering_complete':
-            def station = data.containsKey('stations')?data.stations.station:1
-            def d = getChildDevice(DTHDNI("${data.device_id}:${stations}"))
-            if (d) {
-            d.sendEvent(name: "banner", value: "Watering Complete", "displayed":false)
-            watering_battery_event(d,'closed')
-            runIn(2, "refresh")
-            d.sendEvent(name: "banner", value: "Cloud Refresh Requested..", "displayed":false)
-            }
-            break
-            case 'watering_in_progress_notification':
-            // {"event":"watering_in_progress_notification","program":"a","current_station":1,"run_time":14,"started_watering_station_at":"2019-10-02T10:29:52.000Z",
-            // "rain_sensor_hold":false,"device_id":"5b91523c4f0c7f7ff7b28295"}
-            def d = getChildDevice(DTHDNI("${data.device_id}:${data.current_station}"))
-            log.debug "${data.device_id}:${data.current_station}"
-            log.debug "watering_in_progress_notification: ${d}"
-            watering_battery_event(d,'open')
-            runIn(2, "refresh")
-            break
+            case 'watering_events':
             case 'program_changed':
-            // {"event":"program_changed","program":{"pending_timer_ack":true,"name":"Pond","frequency":{"type":"interval","days":[2,5],"interval":5,"interval_start_time":"Sat, Sep 21, 2019, 08:00:00 PM"},"updated_at":"Tue, Sep 17, 2019, 01:30:46 PM","start_times":["13:00"],"id":"5d192c784f0c7d841e126850","budget":100,"device_id":"5ba4d2694f0c7f7ff7b39480","program":"a","run_times":[{"run_time":2,"station":1}],"enabled":true,"created_at":"Sun, Jun 30, 2019, 05:41:12 PM"},"lifecycle_phase":"update","timestamp":"Tue, Sep 17, 2019, 01:30:46 PM"}
-            runIn(2, "refresh")
-            break
-            case 'rain_delay':
-            // rain_delay {"event":"rain_delay","mode":null,"delay":0,"device_id":"5ba4d2694f0c7f7ff7b39480"}
+            case 'watering_in_progress_notification':
+            case 'watering_complete':
+            runIn(5, "refresh")
             break
             case 'status':
             return allDeviceStatus()
             break
             default:
-                def retMsg = "UNKNOWN device event '${webJSONdata?.event}' post_data: ${webJSONdata}"
-                log.error retMsg
-            return retMsg
+            log.debug "Skipping WebEvent ${data.event}"
             break
         }
-    } else {
-        def message = "WebData: The webData sent is an invalid JSON format, 'event' key missing"
-        log.error message
-        return message
-    }
 }
-
-def watering_battery_event(d,bhyve_valve_state=null,battery_percent=null) {
-    def st_valve_state = d.latestValue('valve')
-    log.debug "st_valve_state = ${st_valve_state}"
-    if ( st_valve_state != bhyve_valve_state) {
-        log.info "${d.name}: Valve state of '${st_valve_state}' CHANGED to '${bhyve_valve_state.toUpperCase()}'"
-        d.sendEvent(name:"valve", value: bhyve_valve_state )
-        log.debug "Sending Message from watering_battery_event"
-        send_message(d,"Valve: ${bhyve_valve_state.toUpperCase()}")
-        if ((st_valve_state != bhyve_valve_state) && (bhyve_valve_state == 'open')) {
-            state.valveLastOpenEpoch << ["${d.deviceNetworkId}" : new Date()]
-        }
     }
-    if (battery_percent) {
-        d.sendEvent(name:"battery", value: battery_percent, displayed:false )
-        d.sendEvent(name:"battery_display", value: (Math.round(battery_percent.toInteger()/10.0) * 10).toString(), displayed:false )
-    }
-    d.sendEvent(name:"lastSTupdate", value: tileLastUpdated(), displayed: false)
-}
-
-
 
 def allDeviceStatus() {
     def results = [:]
@@ -455,6 +389,50 @@ def allDeviceStatus() {
 def appTouchHandler(evt="") {
     log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
     main()
+    return
+    app.getChildDevices().each{
+        def d = getChildDevice(it.deviceNetworkId)
+        if (d.name == "Bhyve Back - Walkout") {
+            def valveState = (d.latestValue('valve')=="closed")?"open":"closed"
+            log.trace "${d.name} will be set to ${valveState}"
+            d.sendEvent(name:"valve", value: valveState )
+        }
+    }
+}
+
+def sendRequest(valveState,device_id,zone,run_time) {
+    if (serverEnabled) {
+        def httpRequest = [
+            method:		settings.httpMethod,
+            path: 		settings.httpResource,
+            query:		[
+                'state'     : (valveState=='open')?'ON':'OFF',
+                'device_id' : device_id,
+                'zone'      : zone,
+                'run_time'  : run_time
+            ],
+            headers:	[
+                HOST:		httpServerIP,
+                Accept: 	"*/*",
+            ]
+        ]
+        runIn(10, "main")
+        def hubAction = new physicalgraph.device.HubAction(httpRequest)
+        sendHubCommand(hubAction)
+    } else {
+        runIn(1, "main")
+    }
+}
+
+def valvesHandler(evt) {
+    if (evt.isStateChange()) {
+        def msgData = "The ${evt.linkText}'s water valve is now ${evt.value.toUpperCase()} at ${evt.date}"
+        send_message(msgData)
+    }
+}
+
+def batteryHandler(evt) {
+    d.sendEvent(name:"lastSTupdate", value: tileLastUpdated(), displayed: false)
 }
 
 def refresh() {
@@ -476,13 +454,11 @@ def updateTiles(data) {
     Random random = new Random()
     debugVerbose("Executing updateTiles(data) #${random.nextInt(1000)} started...")
     def d
-    def byhveValveState
     def started_watering_station_at
     def banner
     def watering_events
     def watering_volume_gal
     def wateringTimeLeft
-    def st_valve_state
     def zoneData
     def zone
     def zones
@@ -530,6 +506,7 @@ def updateTiles(data) {
                 if (deviceType == 'bridge') {
                     d.sendEvent(name:"firmware_version", value: it?.firmware_version, displayed: false)
                     d.sendEvent(name:"hardware_version", value: it?.hardware_version, displayed: false)
+                    return
                 }
 
                 // Check for Orbit sprinkler_timer device
@@ -539,6 +516,8 @@ def updateTiles(data) {
                     d = getChildDevice("${DTHDNI(it.id)}:${station}")
                     log.info "Procesing Orbit Station #${station}: Zone Name: ${zoneData.name}"
 
+                    def byhveValveState = it.status.watering_status?"open":"closed"
+                    d.sendEvent(name:"valve", 						value: byhveValveState )
 					def presetWateringInt = (it.manual_preset_runtime_sec.toInteger()/60)
                     d.sendEvent(name:"presetRuntime", 				value: presetWateringInt, displayed: false )
                     d.sendEvent(name:"manual_preset_runtime_min", 	value: presetWateringInt, displayed: false )
@@ -550,6 +529,7 @@ def updateTiles(data) {
                     d.sendEvent(name:"next_start_programs", value: "Station ${station}: ${next_start_programs}", displayed: false)
 
                     d.sendEvent(name:"sprinkler_type", 		value: "${zoneData.num_sprinklers} ${zoneData.sprinkler_type}(s) ", displayed: false)
+
                     if (it.containsKey('battery')) {
                         d.sendEvent(name:"battery", 			value: it.battery.percent, displayed:false )
                         d.sendEvent(name:"battery_display", 	value: (Math.round(it.battery.percent.toInteger()/10.0) * 10).toString(), displayed:false )
@@ -568,36 +548,6 @@ def updateTiles(data) {
                         def next_start_time_local = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status.next_start_time).format("yyyy-MM-dd'T'HH:mm:ssX", location.timeZone)
                         d.sendEvent(name:"next_start_time", value: durationFromNow(next_start_time_local), displayed: false)
                         banner = "Next Start: Pgm ${next_start_programs} - ${convertDateTime(it.status.next_start_time)}"
-                    }
-
-                    def testingMode = false
-                    if (station == -1) {
-                        testingMode = true
-                        it.status.watering_status = [:]
-
-                        String pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
-                        SimpleDateFormat simpleDateFormat = new SimpleDateFormat(pattern);
-
-                        String date = simpleDateFormat.format(new Date());
-
-                        it.status.watering_status.started_watering_station_at = date
-                        log.debug "it.status.watering_status.started_watering_station_at  = ${it.status.watering_status.started_watering_station_at }"
-                    }
-
-                    byhveValveState = it.status.watering_status?"open":"closed"
-                    st_valve_state = d.latestValue('valve')
-                    if (byhveValveState == 'open') {
-                    if (!state.valveLastOpenEpoch) state.valveLastOpenEpoch = [:]
-                        state.valveLastOpenEpoch["${d.deviceNetworkId}"] = it.status.watering_status.started_watering_station_at
-                    }
-                    if ( st_valve_state != byhveValveState) {
-                        log.info "${d.name}: Valve state of '${st_valve_state}' CHANGED to '${byhveValveState.toUpperCase()}'"
-                        d.sendEvent(name:"valve", 			value: byhveValveState )
-                        if (byhveValveState == 'open') {
-                            state.valveLastOpenEpoch["${d.deviceNetworkId}"] = it.status.watering_status.started_watering_station_at
-                        }
-                        log.debug "Sending Message from UpdateTiles()"
-                        send_message(d,"Valve: ${byhveValveState.toUpperCase()}")
                     }
 
                     // Sprinkler Timer Programs
@@ -653,10 +603,11 @@ def updateTiles(data) {
                     watering_events = OrbitGet('watering_events', it.id)[0]
                     watering_events.irrigation = watering_events.irrigation[-1]?:0
 
-                    if ((watering_events) && (byhveValveState=='open')) {
+                    if ((watering_events) && (byhveValveState == 'open')) {
                         def water_volume_gal = watering_events.irrigation.water_volume_gal?:0
                         started_watering_station_at = convertDateTime(it.status.watering_status.started_watering_station_at)
                         d.sendEvent(name:"water_volume_gal", value: water_volume_gal, descriptionText:"${water_volume_gal} gallons")
+                        wateringTimeLeft = durationFromNow(it.status.next_start_time, "minutes")
                         wateringTimeLeft = durationFromNow(it.status.next_start_time, "minutes")
                         d.sendEvent(name:"level", value: wateringTimeLeft, descriptionText: "${wateringTimeLeft} minutes left till end" )
                         banner ="Active Watering - ${water_volume_gal} gals at ${timestamp('short') }"
@@ -704,12 +655,14 @@ def durationFromNow(dt,showOnly=null) {
         switch (showOnly) {
             case 'minutes':
  			log.debug "rc = ${rc}"
+            log.debug "(/\\d+(?=\\Wminutes)/) = ${(/\d+(?=\Wminutes)/)}"
+            if (/\d+(?=\Wminutes)/) {
             def result = (rc =~ /\d+(?=\Wminutes)/)
-            log.debug "result = ${result}"
-            if (result[0]) {
+                log.debug "result[0] = ${result[0]}"
                 return (result[0])
-            }
+            } else {
             return (rc.replaceAll(/\.\d+/,''))
+            }
             break
             default:
 //                return (rc.replaceAll(/\.\d+/,'') )
@@ -1027,23 +980,10 @@ private initializeAppEndpoint() {
 
 // ======= Pushover Routines ============
 
-def send_message(d, event) {
-    def message
-    def durationTC
-    String duration
-    if (event.toLowerCase().contains('closed')) {
-        Date lastOpen = Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",state.valveLastOpenEpoch[d.deviceNetworkId])
-        use (TimeCategory) {
-            durationTC = new Date() - lastOpen
-        }
-        duration = durationTC
-        message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()} and was actively watering for ${duration.replaceAll(/\.\d+/,'')}!"
-    } else {
-        message = "Orbit Byhve Timer: The ${d.name} has reported a '${event}' at ${timestamp()}!"
-    }
-    if (sendPushEnabled) 	{sendPush(message)}
-    if (sendSMSEnabled) 	{sendSms(phone, message)}
-    if (pushoverEnabled) 	{sendPushoverMessage(message)}
+def send_message(msgData) {
+    if (sendPushEnabled) 	{sendPush(msgData)}
+    if (sendSMSEnabled) 	{sendSms(phone, msgData)}
+    if (pushoverEnabled) 	{sendPushoverMessage(msgData)}
 }
 
 def sendPushoverMessage(msgData) {

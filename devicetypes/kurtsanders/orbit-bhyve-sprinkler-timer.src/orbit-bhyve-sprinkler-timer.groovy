@@ -57,28 +57,29 @@ metadata {
         multiAttributeTile(name:"bigtile", type:"generic", width:6, height:4, canChangeIcon: false ) {
             tileAttribute("device.valve", key: "PRIMARY_CONTROL") {
                 attributeState "default",
-                    label:'',
+                    label:'?',
+                    action: "refresh.refresh",
                     icon:"st.valves.water.closed",
                     backgroundColor:"#00a0dc"
                 attributeState "closing",
                     label:'Closing',
-//                    action: "valve.open",
+                    action: "valve.open",
                     icon:"st.valves.water.closed",
                     backgroundColor:"#f1d801"
                 attributeState "closed",
                     label:'Closed',
-//                    action: "valve.open",
+                    action: "valve.open",
                     icon:"st.valves.water.closed",
                     backgroundColor:"#00a0dc",
                     nextState: "opening"
                 attributeState "opening",
                     label:'Opening',
-//                    action: "valve.close",
+                    action: "valve.close",
                     icon:"st.valves.water.open",
                     backgroundColor:"#f1d801"
                 attributeState "open",
                     label:'Open',
-//                    action: "valve.close",
+                    action: "valve.close",
                     icon:"st.valves.water.open",
                     backgroundColor:"#44b621",
                     nextState: "closing"
@@ -219,14 +220,16 @@ def installed() {
     sendEvent(name: "valve", value: "closed")
 }
 
-def on() {
-    log.info "Orbit B•Hyve™ Device level is now ON"
-    sendEvent(name: "valve", value: "open")
+def open() {
+    log.info "Request to OPEN Orbit B•Hyve™ Device"
+    parent.sendRequest('open', device.latestValue('id'), device.latestValue('station'),device.latestValue('presetRuntime') )
+//    sendEvent(name: "valve", value: "open")
 }
 
-def off() {
-    log.info "Orbit B•Hyve™ Device is now OFF"
-    sendEvent(name: "valve", value: "closed")
+def close() {
+    log.info "Request to CLOSE Orbit B•Hyve™ Device"
+    parent.sendRequest('close', device.latestValue('id'), device.latestValue('station'),device.latestValue('presetRuntime') )
+//    sendEvent(name: "valve", value: "closed")
 }
 
 def setLevel(level, rate = null) {
