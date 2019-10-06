@@ -219,7 +219,7 @@ def notificationOptions() {
             input ( name	: "eventsToNotify",
                    type		: "enum",
                    title	: "Which Events",
-                   options: ['valves':'Valves Open/Close','low_battery':'Low Battery','device_connect_state':'Device Connected/Disconnected'].sort(),
+                   options: ['battery':'Battery Low','connected':'Online/Offline','rain':'Rain Delay','valve':'Valve Open/Close'],
                    description: "Select Events to Notify",
                    required: false,
                    multiple: true
@@ -294,7 +294,10 @@ def initialize() {
     add_bhyve_ChildDevice()
     setScheduler(schedulerFreq)
     subscribe(app, appTouchHandler)
-    subscribe(app.getChildDevices(), "valve", valvesHandler)
+    if (eventsToNotify.contains('valve')) 		{subscribe(app.getChildDevices(), "valve", valveHandler)}
+    if (eventsToNotify.contains('battery')) 	{subscribe(app.getChildDevices(), "battery", batteryHandler)}
+    if (eventsToNotify.contains('rain')) 		{subscribe(app.getChildDevices(), "rain_delay", rain_delayHandler)}
+    if (eventsToNotify.contains('connected')) 	{subscribe(app.getChildDevices(), "is_connected", is_connectedHandler)}
     runIn(5, main)
 }
 
@@ -346,6 +349,11 @@ def webEvent() {
             def d = getChildDevice(DTHDNI("${data.device_id}:${stations}"))
             if (d) {
                 d.sendEvent(name:"run_mode", value: data.mode, displayed: false)
+            }
+            break
+            case 'low_battery':
+            if (eventsToNotify.contains('battery')) {
+                send_message("Check your Orbit watering device for a low battery condition")
             }
             break
             case 'watering_events':
@@ -424,15 +432,29 @@ def sendRequest(valveState,device_id,zone,run_time) {
     }
 }
 
-def valvesHandler(evt) {
+def valveHandler(evt) {
     if (evt.isStateChange()) {
-        def msgData = "The ${evt.linkText}'s water valve is now ${evt.value.toUpperCase()} at ${evt.date}"
+        def msgData = "The ${evt.linkText}'s water valve is now ${evt.value.toUpperCase()} at ${timestamp()}"
         send_message(msgData)
     }
 }
-
+def rain_delayHandler(evt) {
+    if (evt.isStateChange()) {
+        def msgData = "The ${evt.linkText}'s rain delay is now ${evt.value} hours at ${timestamp()}"
+        send_message(msgData)
+    }
+}
 def batteryHandler(evt) {
-    d.sendEvent(name:"lastSTupdate", value: tileLastUpdated(), displayed: false)
+    if (evt.isStateChange() && (evt.value.toInteger() <= 40) ) {
+        def msgData = "The ${evt.linkText}'s battery is now at ${evt.value}% at ${timestamp()}"
+        send_message(msgData)
+    }
+}
+def is_connectedHandler(evt) {
+    if (evt.isStateChange()) {
+        def msgData = "The ${evt.linkText}'s WiFi Online Status is now ${evt.value?'Online':'Offline'} at ${timestamp()}"
+        send_message(msgData)
+    }
 }
 
 def refresh() {

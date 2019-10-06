@@ -41,6 +41,7 @@ metadata {
         attribute "presetRuntime", "number"
         attribute "programs", "string"
         attribute "rain_icon", "string"
+        attribute "rain_delay", "string"
         attribute "runmode", "enum", ["auto, manual"]
         attribute "schedulerFreq", "string"
         attribute "sprinkler_type", "string"
@@ -104,6 +105,9 @@ metadata {
         standardTile("rain_icon", "rain_icon", width: 1, height: 1, decoration: "flat") {
             state "sun",   icon:"st.custom.wuk.clear"
             state "rain",  icon:"st.custom.wu1.chancerain", backgroundColor: "#44b621"
+        }
+        valueTile("rain_delay", "rain_delay", width: 2, height: 1, decoration: "flat", wordWrap: true) {
+            state "default", label: '${currentValue}'
         }
         valueTile("name", "device.name", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}'
