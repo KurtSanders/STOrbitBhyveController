@@ -195,7 +195,7 @@ def notificationOptions() {
         }
 
         section("SMS & Push Notifications for Timer On/Off activity?") {
-            input ( name    : "sendSMSEnabled",
+            input ( name    : "sendPushEnabled",
                    type     : "bool",
                    title    : "Send Events to ST Mobile Client Push Notification? (optional)",
                    required : false
