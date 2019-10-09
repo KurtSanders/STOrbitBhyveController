@@ -195,7 +195,7 @@ def notificationOptions() {
         }
 
         section("SMS & Push Notifications for Timer On/Off activity?") {
-            input ( name    : "sendPushEnabled",
+            input ( name    : "sendSMSEnabled",
                    type     : "bool",
                    title    : "Send Events to ST Mobile Client Push Notification? (optional)",
                    required : false
@@ -397,7 +397,6 @@ def allDeviceStatus() {
 def appTouchHandler(evt="") {
     log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
     main()
-    return
     app.getChildDevices().each{
         def d = getChildDevice(it.deviceNetworkId)
         if (d.name == "Bhyve Back - Walkout") {
@@ -432,27 +431,39 @@ def sendRequest(valveState,device_id,zone,run_time) {
     }
 }
 
+def makeHtmlColor(data,color='red') {
+return "<font color='${color}'>${data}</font>"
+}
+
 def valveHandler(evt) {
     if (evt.isStateChange()) {
-        def msgData = "The ${evt.linkText}'s water valve is now ${evt.value.toUpperCase()} at ${timestamp()}"
+        def msgData = []
+        msgData.add("The ${evt.linkText} ${evt.name} is now ${evt.value.toUpperCase()} at ${timestamp()}")
+        msgData.add("The ${makeHtmlColor(evt.linkText)} ${makeHtmlColor(evt.name,'green')} is now ${makeHtmlColor(evt.value.toUpperCase())} at ${timestamp()}")
         send_message(msgData)
     }
 }
 def rain_delayHandler(evt) {
     if (evt.isStateChange()) {
-        def msgData = "The ${evt.linkText}'s rain delay is now ${evt.value} hours at ${timestamp()}"
+        def msgData = []
+        msgData.add("The ${evt.linkText}'s rain delay is now ${evt.value} hours at ${timestamp()}")
+        msgData.add("The ${makeHtmlColor(evt.linkText)} ${makeHtmlColor(evt.name,'green')} is now ${makeHtmlColor(evt.value.toUpperCase())} hours at ${timestamp()}")
         send_message(msgData)
     }
 }
 def batteryHandler(evt) {
     if (evt.isStateChange() && (evt.value.toInteger() <= 40) ) {
-        def msgData = "The ${evt.linkText}'s battery is now at ${evt.value}% at ${timestamp()}"
+        def msgData = []
+        msgData.add("The ${evt.linkText}'s battery is now at ${evt.value}% at ${timestamp()}")
+        msgData.add("The ${makeHtmlColor(evt.linkText)} ${makeHtmlColor(evt.name,'green')} is now at ${makeHtmlColor(evt.value.toUpperCase())}% at ${timestamp()}")
         send_message(msgData)
     }
 }
 def is_connectedHandler(evt) {
     if (evt.isStateChange()) {
-        def msgData = "The ${evt.linkText}'s WiFi Online Status is now ${evt.value?'Online':'Offline'} at ${timestamp()}"
+        def msgData = []
+        msgData.add("The ${evt.linkText}'s WiFi Online Status is now ${evt.value?'Online':'Offline'} at ${timestamp()}")
+        msgData.add("The ${makeHtmlColor(evt.linkText)} WiFi ${makeHtmlColor(evt.name,'green')} is now ${makeHtmlColor(evt.value?'Online':'Offline')} at ${timestamp()}")
         send_message(msgData)
     }
 }
@@ -1002,10 +1013,16 @@ private initializeAppEndpoint() {
 
 // ======= Pushover Routines ============
 
-def send_message(msgData) {
+def send_message(String msgData) {
     if (sendPushEnabled) 	{sendPush(msgData)}
     if (sendSMSEnabled) 	{sendSms(phone, msgData)}
     if (pushoverEnabled) 	{sendPushoverMessage(msgData)}
+}
+
+def send_message(ArrayList msgData) {
+    if (sendPushEnabled) 	{sendPush(msgData[0])}
+    if (sendSMSEnabled) 	{sendSms(phone, msgData[0])}
+    if (pushoverEnabled) 	{sendPushoverMessage(msgData[1])}
 }
 
 def sendPushoverMessage(msgData) {
@@ -1019,6 +1036,7 @@ def sendPushoverMessage(msgData) {
         user			: pushoverUser.trim() as String,
         title			: app.name as String,
         message			: msgData as String,
+        html			: 1,
         device			: pushoverDevices.join(',') as String
     ]
     params.body = new JsonOutput().toJson(bodyx)
