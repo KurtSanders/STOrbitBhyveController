@@ -13,7 +13,7 @@
 *  for the specific language governing permissions and limitations under the License.
 *
 */
-def version() { return ["V4.0", "Requires Bhyve Orbit Timer Controller"] }
+def version() { return ["V4.0.0", "Requires Bhyve Orbit Timer Controller"] }
 // End Version Information
 
 import groovy.time.*
