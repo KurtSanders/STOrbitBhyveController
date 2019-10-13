@@ -22,7 +22,7 @@ import groovy.json.JsonSlurper
 
 
 String appVersion()	 	{ return "4.00" }
-String appModified() 	{ return "2019-09-28" }
+String appModified() 	{ return "2019-10-13" }
 String appDesc()		{"Support for Orbit Single and Multi-zone Timers"}
 
 definition(
@@ -119,7 +119,6 @@ def mainOptions() {
         if (pushoverEnabled) 	notifyList << "PushOver"
         if (sendPushEnabled) 	notifyList << "ST Client"
         if (sendSMSEnabled) 	notifyList << "SMS"
-        log.debug "notifyList = ${notifyList}"
     }
     dynamicPage(name: "mainOptions",
                 title: "Bhyve Timer Controller Options",
@@ -188,8 +187,8 @@ def notificationOptions() {
             if (pushoverEnabled) {
                 input "pushoverUser", "string", title: "Enter Pushover User API Key", description: "Enter User API Key", required: pushoverEnabled, submitOnChange: true
                 input "pushoverToken", "string", title: "Enter Pushover Application API Key", description: "Enter Application API Key", required: pushoverEnabled, submitOnChange: true
-                if ((pushoverUserAPI) && (pushoverUserAPI)) {
-                    input "pushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", options: findMyPushoverDevices(), multiple: true, required: pushoverEnabled
+                if ((pushoverUser) && (pushoverToken)) {
+                    input "pushoverDevices", "enum", title: "Select Pushover Devices", description: "Tap to select", options: findMyPushoverDevices(), submitOnChange: true, multiple: true, required: pushoverEnabled
                         }
                     }
         }
@@ -499,6 +498,7 @@ def updateTiles(data) {
     def next_start_programs
     def i
     def stp
+    def scheduled_auto_on
     data.each {
         def deviceType = it.type
         switch (deviceType) {
@@ -508,7 +508,6 @@ def updateTiles(data) {
             zones = 1
             break
             case 'sprinkler_timer':
-            log.info "Procesing Orbit Sprinkler Device: '${it.name}'"
             zones = it.zones.size()
             stp = OrbitGet("sprinkler_timer_programs", it.id)
             break
@@ -546,8 +545,9 @@ def updateTiles(data) {
                 if (deviceType == 'sprinkler_timer') {
                     zoneData 	= it.zones[i]
                     station 	= zoneData.station
+                    scheduled_auto_on 	= true
                     d = getChildDevice("${DTHDNI(it.id)}:${station}")
-                    log.info "Procesing Orbit Station #${station}: Zone Name: ${zoneData.name}"
+                    log.info "Procesing Orbit Sprinkler Device: '${it.name}', Orbit Station #${station}, Zone Name: '${zoneData.name}'"
 
                     def byhveValveState = it.status.watering_status?"open":"closed"
                     d.sendEvent(name:"valve", 						value: byhveValveState )
@@ -571,6 +571,24 @@ def updateTiles(data) {
                         d.sendEvent(name:"battery_display", 	value: "100" , displayed:false )
                     }
 
+                    // Check for System On/Off Mode for this device
+                    if (it.scheduled_modes.containsKey('auto') && it.scheduled_modes.containsKey('off')) {
+                        def dateFormat = (it.scheduled_modes.auto.annually==true)?"MMdd":"YYYYMMdd"
+                        def todayDate 		= new Date().format(dateFormat, location.timeZone)
+                        def begAutoAtDate 	= Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",it.scheduled_modes.auto.at).format(dateFormat)
+                        def begOffAtDate 	= Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",it.scheduled_modes.off.at).format(dateFormat)
+                        log.debug "${begAutoAtDate} ${todayDate} ${begOffAtDate}"
+                        log.debug "begAutoAtDate<=todayDate && begOffAtDate>=todayDate = ${begAutoAtDate<=todayDate && begOffAtDate>=todayDate}"
+                        if (!(begAutoAtDate<=todayDate && begOffAtDate>=todayDate)) {
+                            scheduled_auto_on = false
+                            d.sendEvent(name:"rain_icon", 		value: "sun", displayed: false )
+                            d.sendEvent(name:"next_start_time", value: "System Auto Off Mode", displayed: false)
+                            banner = "Next Start: System OFF until ${Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",it.scheduled_modes.auto.at).format("MMM-dd")}"
+                            log.warn "${zoneData.name} ${banner}"
+                        }
+                    }
+                    d.sendEvent(name:"scheduled_auto_on", value: scheduled_auto_on, displayed: false )
+                    if (scheduled_auto_on) {
                     if (it.status.rain_delay > 0) {
                         d.sendEvent(name:"rain_icon", 			value: "rain", displayed: false )
                         def rainDelayDT = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status.next_start_time).format("yyyy-MM-dd'T'HH:mm:ssX", location.timeZone)
@@ -581,6 +599,7 @@ def updateTiles(data) {
                         def next_start_time_local = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status.next_start_time).format("yyyy-MM-dd'T'HH:mm:ssX", location.timeZone)
                         d.sendEvent(name:"next_start_time", value: durationFromNow(next_start_time_local), displayed: false)
                         banner = "Next Start: Pgm ${next_start_programs} - ${convertDateTime(it.status.next_start_time)}"
+                    }
                     }
 
                     // Sprinkler Timer Programs
@@ -629,7 +648,7 @@ def updateTiles(data) {
                         if (msgList.size()>0) {
                             d.sendEvent(name:"programs", value: "${zoneData.name} Programs\n${msgList.join(',\n')}", displayed: false)
                         } else {
-                            d.sendEvent(name:"programs", value: "${zoneData.name} Programs\n${it.name}: None)", displayed: false)
+                            d.sendEvent(name:"programs", value: "${zoneData.name} Programs\n${it.name}: None", displayed: false)
                         }
                     }
                     // Watering Events
@@ -684,14 +703,14 @@ def durationFromNow(dt,showOnly=null) {
     }
     if (duration) {
         rc = duration
-        log.debug "duration = ${duration}"
+//        log.debug "duration = ${duration}"
         switch (showOnly) {
             case 'minutes':
- 			log.debug "rc = ${rc}"
-            log.debug "(/\\d+(?=\\Wminutes)/) = ${(/\d+(?=\Wminutes)/)}"
+// 			log.debug "rc = ${rc}"
+//            log.debug "(/\\d+(?=\\Wminutes)/) = ${(/\d+(?=\Wminutes)/)}"
             if (/\d+(?=\Wminutes)/) {
             def result = (rc =~ /\d+(?=\Wminutes)/)
-                log.debug "result[0] = ${result[0]}"
+//                log.debug "result[0] = ${result[0]}"
                 return (result[0])
             } else {
             return (rc.replaceAll(/\.\d+/,''))

@@ -48,6 +48,7 @@ metadata {
         attribute "start_times", "string"
         attribute "station", "string"
         attribute "statusText", "string"
+        attribute "scheduled_auto_on", "enum", ['true','false']
         attribute "type", "string"
         attribute "water_volume_gal", "number"
 
@@ -109,6 +110,7 @@ metadata {
         valueTile("rain_delay", "rain_delay", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}'
         }
+        /*
         valueTile("name", "device.name", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}'
         }
@@ -118,10 +120,11 @@ metadata {
         valueTile("id", "id", width: 2, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}'
         }
-        valueTile("programs", "device.programs", width: 6, height: 2, decoration: "flat", wordWrap: true) {
+        valueTile("station", "device.station", width: 1, height: 1, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}'
         }
-        valueTile("station", "device.station", width: 1, height: 1, decoration: "flat", wordWrap: true) {
+        */
+        valueTile("programs", "device.programs", width: 6, height: 2, decoration: "flat", wordWrap: true) {
             state "default", label: '${currentValue}'
         }
         standardTile("battery_display", "device.battery_display", width: 2, height: 2, decoration: "flat", wordWrap: true) {
@@ -225,9 +228,15 @@ def installed() {
 }
 
 def open() {
+    if (device.latestValue('scheduled_auto_on')=='true') {
     log.info "Request to OPEN Orbit B•Hyve™ Device"
     parent.sendRequest('open', device.latestValue('id'), device.latestValue('station'),device.latestValue('presetRuntime') )
 //    sendEvent(name: "valve", value: "open")
+    } else {
+        def message =  "Orbit device requested to manually OPEN but scheduled_auto_on = false, ignorning request"
+        log.warn message
+        sendEvent(name: "valve", value: "closed", isStateChange: true, linkText: message)
+    }
 }
 
 def close() {
