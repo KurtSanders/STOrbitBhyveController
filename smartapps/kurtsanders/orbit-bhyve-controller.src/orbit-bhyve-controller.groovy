@@ -21,8 +21,8 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
 
-String appVersion()	 	{ return "4.00" }
-String appModified() 	{ return "2019-10-13" }
+String appVersion()	 	{ return "4.01" }
+String appModified() 	{ return "2019-12-18" }
 String appDesc()		{"Support for Orbit Single and Multi-zone Timers"}
 
 definition(
@@ -293,10 +293,12 @@ def initialize() {
     add_bhyve_ChildDevice()
     setScheduler(schedulerFreq)
     subscribe(app, appTouchHandler)
+    if (eventsToNotify) {
     if (eventsToNotify.contains('valve')) 		{subscribe(app.getChildDevices(), "valve", valveHandler)}
     if (eventsToNotify.contains('battery')) 	{subscribe(app.getChildDevices(), "battery", batteryHandler)}
     if (eventsToNotify.contains('rain')) 		{subscribe(app.getChildDevices(), "rain_delay", rain_delayHandler)}
     if (eventsToNotify.contains('connected')) 	{subscribe(app.getChildDevices(), "is_connected", is_connectedHandler)}
+    }
     runIn(5, main)
 }
 
@@ -558,10 +560,10 @@ def updateTiles(data) {
                     d.sendEvent(name:"run_mode", 					value: it.status.run_mode, displayed: false)
                     d.sendEvent(name:"station", 					value: station, displayed: false)
 
-                    next_start_programs = it.status.next_start_programs.join(', ').toUpperCase()
+                    next_start_programs = it.status.next_start_programs?it.status.next_start_programs.join(', ').toUpperCase():''
                     d.sendEvent(name:"next_start_programs", value: "Station ${station}: ${next_start_programs}", displayed: false)
 
-                    d.sendEvent(name:"sprinkler_type", 		value: "${zoneData.num_sprinklers} ${zoneData.sprinkler_type}(s) ", displayed: false)
+                    d.sendEvent(name:"sprinkler_type", 		value: "${zoneData.num_sprinklers>0?:'Unknown'} ${zoneData.sprinkler_type?zoneData.sprinkler_type+'(s)':''} ", displayed: false)
 
                     if (it.containsKey('battery')) {
                         d.sendEvent(name:"battery", 			value: it.battery.percent, displayed:false )
@@ -575,15 +577,15 @@ def updateTiles(data) {
                     if (it.scheduled_modes.containsKey('auto') && it.scheduled_modes.containsKey('off')) {
                         def dateFormat = (it.scheduled_modes.auto.annually==true)?"MMdd":"YYYYMMdd"
                         def todayDate 		= new Date().format(dateFormat, location.timeZone)
-                        def begAutoAtDate 	= Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",it.scheduled_modes.auto.at).format(dateFormat)
-                        def begOffAtDate 	= Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",it.scheduled_modes.off.at).format(dateFormat)
-                        log.debug "${begAutoAtDate} ${todayDate} ${begOffAtDate}"
-                        log.debug "begAutoAtDate<=todayDate && begOffAtDate>=todayDate = ${begAutoAtDate<=todayDate && begOffAtDate>=todayDate}"
+                        def begAutoAtDate 	= it.scheduled_modes.auto.at?Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",it.scheduled_modes.auto.at).format(dateFormat):''
+                        def begOffAtDate 	= it.scheduled_modes.off.at?Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",it.scheduled_modes.off.at).format(dateFormat):''
+//                        log.debug "${begAutoAtDate} ${todayDate} ${begOffAtDate}"
+//                        log.debug "begAutoAtDate<=todayDate && begOffAtDate>=todayDate = ${begAutoAtDate<=todayDate && begOffAtDate>=todayDate}"
                         if (!(begAutoAtDate<=todayDate && begOffAtDate>=todayDate)) {
                             scheduled_auto_on = false
                             d.sendEvent(name:"rain_icon", 		value: "sun", displayed: false )
                             d.sendEvent(name:"next_start_time", value: "System Auto Off Mode", displayed: false)
-                            banner = "Next Start: System OFF until ${Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",it.scheduled_modes.auto.at).format("MMM-dd")}"
+                            banner = "Next Start: System OFF until ${it.scheduled_modes.auto.at?Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",it.scheduled_modes.auto.at).format("MMM-dd"):'?'}"
                             log.warn "${zoneData.name} ${banner}"
                         }
                     }
@@ -919,7 +921,7 @@ def add_bhyve_ChildDevice() {
                     data = [
                         DTHid 	: "${DTHDNI(it.id)}:${it.zones[i].station}",
                         DTHname : DTHName(it.type.split(" |-|_").collect{it.capitalize()}.join(" ")),
-                        DTHlabel: "Bhyve ${it.zones[i].name}"
+                        DTHlabel: "Bhyve ${it.zones[i].name?:it.name}"
                     ]
                     createDevice(data)
                 }
@@ -957,7 +959,7 @@ def createDevice(data) {
             log.error "The Device Handler '${data.DTHname}' was not found in your 'My Device Handlers', Error-> '${e}'.  Please install this DTH device in the IDE's 'My Device Handlers'"
             return false
         }
-        log.info "Success: Added a new device named '${DTHlabel}' as DTH:'${DTHname}' with DNI:'${DTHid}'"
+        log.info "Success: Added a new device named '${data.DTHlabel}' as DTH:'${data.DTHname}' with DNI:'${data.DTHid}'"
     }
     return true
 }
