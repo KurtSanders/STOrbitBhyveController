@@ -1,12 +1,12 @@
 # STOrbitBhyveController
 #### * SmartThings® Integration for the b•hyve™ hose faucet timers *
-### Version: 4.00 (beta Branch - Alpha Testing Phase)
+### Version: 4.01 (βeta Branch - βeta Testing Phase)
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/readme.png" width="50">  
 [Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
 
 ---
 
-##### *This new beta version provides support for showing 'open' or 'closed' Bhyve Status and SMS/Push Messages and builds the base code for interfacing SmartThings and b•hyve™ with a Nodejs/MQTT/Websocket server for real-time response.
+##### *This new βeta version provides support for showing 'open' or 'closed' Bhyve Status and SMS/Push Messages and builds the base code for interfacing SmartThings and b•hyve™ with a Nodejs/MQTT/Websocket server for real-time response.
 
 	* WebCore™ can be used to detect and act on device valve 'open' or 'closed', Rain Delay, etc events.
 
@@ -54,7 +54,7 @@ Create a new SmartThings Repository entry in your SmartThings IDE under 'Setting
 
 | Owner | Name | Branch |
 |------|:-------:|--------|
-| kurtsanders | STOrbitBhyveController | :new: **beta** |
+| kurtsanders | STOrbitBhyveController | **beta** | :new:
 
 **Required Files in your SmartThings IDE Repository**
 
@@ -62,7 +62,7 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 
 | IDE Repository    | Filename | Status |
 | :---: | :----------| :---:  |
-| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **Updated V4.0** |
+| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **Updated V4.01** |
 | My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **Updated V4.0** |
 | My Device Handler | kurtsanders : Orbit Bhyve Bridge | **Updated V4.0**|
 
