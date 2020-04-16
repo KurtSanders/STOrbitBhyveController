@@ -1,12 +1,14 @@
 # STOrbitBhyveController
 #### * SmartThings® Integration for the b•hyve™ hose faucet timers *
-### Version: 2.03 (Production Master Branch - Stable)
-<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/readme.png" width="50">[Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
+### Version: 4.01
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/readme.png" width="50">  
+[Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
 
 ---
 
-##### *This new version provides support for showing 'open' or 'closed' Bhyve Status and SMS/Push Messages*
-	* WebCore™ can be used to detect and act on device valve 'open' or 'closed', Rain Delay, etc events
+##### *This new version provides support for showing 'open' or 'closed' Bhyve Status and SMS/Push Messages and builds the base code for interfacing SmartThings and b•hyve™ with a Nodejs/MQTT/Websocket server for real-time response.
+
+* WebCore™ can be used to detect and act on device valve 'open' or 'closed', Rain Delay, etc events.
 
 ### Description:
 
@@ -31,10 +33,12 @@ This SmartThings application allows one to **view** the state of their [Orbit b�
 
 ## Requirements:
 
-1. One or more of the following [Orbit b•hyve™ Smart Hose Timer and/or Wi-Fi Hub](https://bhyve.orbitonline.com/hosefaucet/) shown below: 
+1. One or more of the following [Orbit b•hyve™ Smart Timers and/or Wi-Fi Hub](https://bhyve.orbitonline.com/hosefaucet/) shown below: 
 <p align="center">
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/bhyveIcon.png" width=200><br>
-<a href="https://www.amazon.com/Orbit-B-hyve-21004-Faucet-Compatible/dp/B0758NR8DJ/ref=sr_1_2?s=lawn-garden&ie=UTF8&qid=1519147062&sr=1-2&keywords=bhyve">Amazon™ Orbit b•hyve™ Model 21004</a>
+<a href="https://www.amazon.com/Orbit-B-hyve-21004-Faucet-Compatible/dp/B0758NR8DJ/ref=sr_1_2?s=lawn-garden&ie=UTF8&qid=1519147062&sr=1-2&keywords=bhyve">Amazon™ Orbit b•hyve™ Model 21004</a><br><br>
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/ht-12.jpg" width=200><br>
+<a href="https://www.amazon.com/Orbit-57950-Outdoor-Sprinkler-Controller/dp/B01D15HOTU?ie=UTF8&*Version*=1&*entries*=0">Amazon™ Orbit 57950 B-hyve Smart Indoor/Outdoor 6/12-Station WiFi Sprinkler System Controller</a><br>
 </p>
 
 2. A supported mobile device with **SmartThings Legacy Client**. *This app will not work in the new Samsung SmartThings App*.  
@@ -50,7 +54,7 @@ Create a new SmartThings Repository entry in your SmartThings IDE under 'Setting
 
 | Owner | Name | Branch |
 |------|:-------:|--------|
-| kurtsanders | STOrbitBhyveController | master |
+| kurtsanders | STOrbitBhyveController | **master** | :new:
 
 **Required Files in your SmartThings IDE Repository**
 
@@ -58,9 +62,9 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 
 | IDE Repository    | Filename | Status |
 | :---: | :----------| :---:  |
-| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **Updated V2.02** |
-| My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **Updated V2.02** |
-| My Device Handler | kurtsanders : Orbit Bhyve Bridge | UnChanged from V1 |
+| My SmartApps      | kurtsanders : Orbit Bhyve Controller | **Updated V4.01** |
+| My Device Handler | kurtsanders : Orbit Bhyve Sprinkler Timer | **Updated V4.0** |
+| My Device Handler | kurtsanders : Orbit Bhyve Bridge | **Updated V4.0**|
 
 
 **Instructions**
@@ -74,6 +78,6 @@ You will need to use 'Update from Repo' to install into your SmartThings IDE rep
 
 **Known Issues & Limitations**
 
-1. 'open' or 'closed' valve attribute watering detection and device updates are controlled by the user polling frequency setting in the SmartApp user preferences.  Please do not set the polling to be excessive.
-2. The Enable API for the SmartApp is not functional in the v2 version. A future release will incorporate the ability to activate the b•hyve™ hose faucet timer from the SmartThings SmartApp.
-3. The Orbit b•hyve™ Controller SmartApp v2 cannot activate a b•hyve™ hose faucet timer, or length of water duration from the SmartApp.  These controller functions must be done either manually at the b•hyve™ hose faucet timer, or through the b•hyve™ mobile App. 
+1. 'open' or 'closed' valve attribute watering detection and device updates are controlled by the user polling frequency setting in the SmartApp user preferences.  Please do not set the polling to be too excessive.
+2. The Enable API for the SmartApp is not functional in the v3 alpha version. A future release of this version will incorporate the ability to activate the b•hyve™ hose faucet timer from the SmartThings SmartApp via a Nodejs/MQTT server.
+3. The Orbit b•hyve™ Controller SmartApp v3 cannot activate a b•hyve™ hose faucet timer, or length of water duration from the SmartApp.  These controller functions must be done either manually at the b•hyve™ hose faucet timer, or through the b•hyve™ mobile App. 
