@@ -1,0 +1,42 @@
+{
+  "name": "STOrbitBhyveController",
+  "description": "A Node/MQTT gateway for integrating a Orbit B-Hyve Watering WiFi Timer with real-time control by SmartThings API",
+  "main": "app.js",
+  "keywords": [
+    "orbit bhyve",
+    "SmartThings",
+    "mqtt",
+    "Water Timer"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "http:KurtSanders/STOrbitBhyveController/node"
+  },
+  "bugs": "https://github.com/KurtSanders/STOrbitBhyveController/issues",
+  "homepage": "https://github.com/KurtSanders/STOrbitBhyveController#storbitbhyvecontroller",
+  "scripts": {
+    "start": "node -r dotenv/config app.js dotenv_config_path=./.env"
+  },
+  "author": "Kurt Sanders for the SmartThings API Integration",
+  "contributors": [
+    "Bill Church for Bhyve API and Node MQTT base code."
+  ],
+  "license": "MIT and Apache",
+  "private": true,
+  "dependencies": {
+    "ajv": "^6.12.2",
+    "axios": "^0.19.2",
+    "chalk": "^4.0.0",
+    "dotenv": "^8.2.0",
+    "lodash.foreach": "^4.5.0",
+    "lodash.get": "^4.4.2",
+    "lodash.isequal": "^4.5.0",
+    "mqtt": "^4.0.1",
+    "ws": "^7.3.0"
+  },
+  "engines": {
+    "node": ">= 12.9.1",
+    "npm": ">= 6.11.3"
+  },
+  "version": "0.0.1"
+}
