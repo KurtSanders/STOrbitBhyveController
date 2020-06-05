@@ -37,6 +37,14 @@
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/NodeProxySetup.jpg" width=400>
 </p>
 
+### ST IDE Live Logging View
+
+1. When one enters and exist the API Setup section in the Orbit bhyve SmartApp (see above), the SmartThings API and Secret strings will be displayed in the Live Logging view.  This allows one to copy and paste these two strings into the Raspberry Pi's .env file.
+
+<p align="center">
+<img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/ST-IDE-API-Strings.jpg">
+</p>
+ 
 
 ### Raspberry Pi Server
 
@@ -105,6 +113,7 @@
 | `MQTT_BROKER_ADDRESS=mqtt://localhost:1883` | Required | MQTT Broker URL   |
 | `MQTT_PASSWORD=`       | Optional | MQTT Broker access password if a password was setup during MQTT install                            |
 | `ST_SMARTAPPURL=`       | Required | OAUTH HAS TO BE ENABLED IN THE ORBIT BHYVE CONTROLLER SMARTAPP IN THE ST IDE.  <br>The SmartThings API Rest string will be displayed in the ST Live Logging Screen when exiting the Orbit Bhyve Controller SmartApp. EXAMPLE:<BR>ST_SMARTAPPURL=https://graph.api.smartthings.com:443/api/smartapps/installations/xxxxxxxx/yyyyyyyyyyyy |
+|`ST_SECRET=`| Required|SmartThings secret string as displayed in ST IDE Live Logging|
 | **Advanced Section**|| (Be careful in changing from the default values below)| 
 | `ST_TEST=false`| Required | Set ST_TEST=true to prevent API POST commands to SmartThings for debugging. ST_TEST=false will send real event data to SmartThings API endpoint |
 | `ST_DEBUG=false`| Required | Set ST_DEBUG=true to generate verbose console messages for debugging, ST_DEBUG=false will restrict debug messages| 
