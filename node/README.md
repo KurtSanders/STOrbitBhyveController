@@ -138,9 +138,8 @@
 
 11. After confirming no errors and that you can turn on/off your watering devices from SmartThings Tile, run the node application as a detached process in the background:
 
-	```
-	node app.js &
-```
+
+	`node app.js &`
 
 	* Alternative Options for Appication Startup, Monitoring & Restart
 	
