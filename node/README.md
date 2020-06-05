@@ -92,11 +92,9 @@
 
 	* Copy the .env-sample template file to .env and edit the .env file to add the required information according to the table below:
 
-		```
-cp .env-sample .env
-nano .env
-
-		```
+	`cp .env-sample .env`
+	
+	`nano .env`
 
 	* .env data fields (Add field values without any quotes or spaces)
 
