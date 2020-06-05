@@ -75,10 +75,7 @@
 
 5. Download the 'st-orbit-bhyve-controller-0.0.1.tgz' from to the 'bhyve' folder with the command below:
 
-	```
-wget https://github.com/KurtSanders/STOrbitBhyveController/raw/master/node/st-orbit-bhyve-controller-0.0.1.tgz
-
-	```
+	`wget https://github.com/KurtSanders/STOrbitBhyveController/raw/master/node/st-orbit-bhyve-controller-0.0.1.tgz`
 	
 6. Unpack the tarball into the 'bhyve' folder and list the files
 
