@@ -77,7 +77,7 @@
 
 	```
 wget https://github.com/KurtSanders/STOrbitBhyveController/raw/master/node/st-orbit-bhyve-controller-0.0.1.tgz
-	```
+```
 	
 6. Unpack the tarball into the 'bhyve' folder and list the files
 
