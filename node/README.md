@@ -77,7 +77,8 @@
 
 	```
 wget https://github.com/KurtSanders/STOrbitBhyveController/raw/master/node/st-orbit-bhyve-controller-0.0.1.tgz
-```
+
+	```
 	
 6. Unpack the tarball into the 'bhyve' folder and list the files
 
@@ -104,7 +105,7 @@ nano .env
 
 	* .env data fields (Add field values without any quotes or spaces)
 
-		| Key                  | Type     | description                                       |
+| Key                  | Type     | description                                       |
 |:---------------------|:--------:|:--------------------------------------------------|
 | `ORBIT_EMAIL=`         | Required | [Orbit Account](https://techsupport.orbitbhyve.com/) Email Address                     |
 | `ORBIT_PASSWORD=`      | Required | [Orbit Account](https://techsupport.orbitbhyve.com/) Password                 |   
