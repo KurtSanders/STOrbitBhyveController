@@ -86,9 +86,7 @@
 
 7. Install st-orbit-bhyve-controller required node modules
 
-	```
-npm install 
-	```
+	`npm install`
 
 8. Configure Environment .env File
 
