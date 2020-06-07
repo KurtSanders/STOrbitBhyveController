@@ -21,6 +21,7 @@
 6. Orbit Bhyve Controller SmartApp
 	* [Version 4+](https://github.com/KurtSanders/STOrbitBhyveController)
 7. Node/NPM
+8. Nano editor or your choice for text editor
 
 
 ## Installation & Configuration
@@ -106,22 +107,23 @@
 
 	* .env data fields (Add field values without any quotes or spaces)
 
-| Key                  | Type     | description                                       |
-|:---------------------|:--------:|:--------------------------------------------------|
-| `ORBIT_EMAIL=`         | Required | [Orbit Account](https://techsupport.orbitbhyve.com/) Email Address                     |
-| `ORBIT_PASSWORD=`      | Required | [Orbit Account](https://techsupport.orbitbhyve.com/) Password                 |   
-| `MQTT_BROKER_ADDRESS=mqtt://localhost:1883` | Required | MQTT Broker URL   |
-| `MQTT_PASSWORD=`       | Optional | MQTT Broker access password if a password was setup during MQTT install                            |
-| `ST_SMARTAPPURL=`       | Required | OAUTH HAS TO BE ENABLED IN THE ORBIT BHYVE CONTROLLER SMARTAPP IN THE ST IDE.  <br>The SmartThings API Rest string will be displayed in the ST Live Logging Screen when exiting the Orbit Bhyve Controller SmartApp. EXAMPLE:<BR>ST_SMARTAPPURL=https://graph.api.smartthings.com:443/api/smartapps/installations/xxxxxxxx/yyyyyyyyyyyy |
-|`ST_SECRET=`| Required|SmartThings secret string as displayed in ST IDE Live Logging|
-| **Advanced Section**|| (Be careful in changing from the default values below)| 
-| `ST_TEST=false`| Required | Set ST_TEST=true to prevent API POST commands to SmartThings for debugging. ST_TEST=false will send real event data to SmartThings API endpoint |
-| `ST_DEBUG=false`| Required | Set ST_DEBUG=true to generate verbose console messages for debugging, ST_DEBUG=false will restrict debug messages| 
-| `ST_REFRESH_INTERVAL_SEC=15` | Required | ST Polling Interval (Do not exceed a value of 15 or less than 10) |
-| `WEBSERVER_PORT=3000` | Required | If this listening port is changed due to a local server conflict, it must be changed in the ST User Preferences Section |
-| `PUSHOVER_MESSAGING=false`| Required | Off by default.  [Pushover Messaging Service](https://pushover.net)   You MUST have a Pushover account to have messages sent to Pushover.  Change PUSHOVER_MESSAGING=true and your USER and TOKEN values are required below. 
-| `PUSHOVER_USER=`    | Required | Pushover user string| 
-| `PUSHOVER_TOKEN=`	| Required | Pushover token string| 
+	| Key                  | Type     | description                                       |
+	|:---------------------|:--------:|:--------------------------------------------------|
+	| `ORBIT_EMAIL=`         | Required | [Orbit Account](https://techsupport.orbitbhyve.com/) Email Address                     |
+	| `ORBIT_PASSWORD=`      | Required | [Orbit Account](https://techsupport.orbitbhyve.com/) Password                 |   
+	| `MQTT_BROKER_ADDRESS=mqtt://localhost:1883` | Required | MQTT Broker URL   |
+	| `MQTT_PASSWORD=`       | Optional | MQTT Broker access password if a password was setup during MQTT install                            |
+	| `ST_SMARTAPPURL=`       | Required | OAUTH HAS TO BE ENABLED IN THE ORBIT BHYVE CONTROLLER SMARTAPP IN THE ST IDE.  <br>The SmartThings API Rest string will be displayed in the ST Live Logging Screen when exiting the Orbit Bhyve Controller SmartApp. EXAMPLE:<BR>ST_SMARTAPPURL=https://graph.api.smartthings.com:443/api/smartapps/installations/xxxxxxxx/yyyyyyyyyyyy |
+	|`ST_SECRET=`| Required|SmartThings secret string as displayed in ST IDE Live Logging|
+	| **Advanced Section**|| (Be careful in changing from the default values below)| 
+	| `ST_TEST=false`| Required | Set ST_TEST=true to prevent API POST commands to SmartThings for debugging. ST_TEST=false will send real event data to SmartThings API endpoint |
+	| `ST_DEBUG=false`| Required | Set ST_DEBUG=true to generate verbose console messages for debugging, ST_DEBUG=false will restrict debug messages| 
+	| `ST_REFRESH_INTERVAL_SEC=15` | Required | ST Polling Interval (Do not exceed a value of 15 or less than 10) |
+	| `WEBSERVER_PORT=3000` | Required | If this listening port is changed due to a local server conflict, it must be changed in the ST User Preferences Section |
+	| `PUSHOVER_MESSAGING=false`| Required | Off by default.  [Pushover Messaging Service](https://pushover.net)   You MUST have a Pushover account to have messages sent to Pushover.  Change PUSHOVER_MESSAGING=true and your USER and TOKEN values are required below. 
+	| `PUSHOVER_USER=`    | Required | Pushover user string| 
+	| `PUSHOVER_TOKEN=`	| Required | Pushover token string| 
+
 
 9. Run the application Interactively to Identify Errors
 
@@ -143,14 +145,31 @@
 	Fri, Jun 05, 2020, 2:30:32 PM - Post Accepted Status: 200<p>
 	^C<br>
 	Fri, Jun 05, 2020, 2:30:37 PM - Ctrl-C interrupt signal 'SIGINT detected' - Shutting down<br>
+ 
 
+12. After confirming no errors and that you can turn on/off your watering devices from SmartThings Tile, press Ctrl-C to end the process.
 
-11. After confirming no errors and that you can turn on/off your watering devices from SmartThings Tile, run the node application as a detached process in the background:
+13. Run the node application as a detached process in the background:
 
+	- Option 1 (No additional software but limited restart and logging capabilities)
+	
+		`node app.js &`
 
-	`node app.js &`
-
-	* Alternative Options for Appication Startup, Monitoring & Restart
+	- Option 2 Monitoring & Restart Capabilities (**Preferred**)
 	
 		* Install [PM2](https://pm2.keymetrics.io/docs/usage/quick-start/#installation)
-		* Install [Docker](https://docs.docker.com/engine/install/debian/) and Build app as Docker Image
+		
+		> PM2 is a production process manager for Node.js applications with a built-in load balancer. It allows you to keep applications alive forever, to reload them without downtime and to facilitate common system admin tasks.
+		
+		```
+		sudo npm install pm2 -g
+		pm2 startup
+			* Follow instructions and execute the command as displayed
+		* nano ecosystem.config.js
+			* Edit and verify/change the 'args' string to reflect the correct directory path
+			* Save the file
+		* pm2 start
+		* pm2 save
+		* pm2 status
+		* pm2 logs
+		```
