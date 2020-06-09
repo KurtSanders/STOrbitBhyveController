@@ -64,6 +64,7 @@
 	```
  	sudo apt install mosquitto 	
  	sudo systemctl enable mosquitto
+ 	sudo systemctl start mosquitto
  	sudo systemctl status mosquitto
 	```
 
