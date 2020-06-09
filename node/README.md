@@ -65,15 +65,24 @@
  	sudo apt install mosquitto 	
  	sudo systemctl enable mosquitto
  	sudo systemctl start mosquitto
- 	sudo systemctl status mosquitto
-	```
+ 	```
+ 	
+ 	`sudo systemctl status mosquitto`	
 
-		● mosquitto.service - Mosquitto MQTT v3.1/v3.1.1 Broker<br>
-		   Loaded: loaded (/lib/systemd/system/mosquitto.service; enabled; vendor preset: enabled)<br>
-		   Active: inactive (dead) since Thu 2020-05-14 19:18:48 EDT; 3 weeks 0 days ago<br>
-		     Docs: man:mosquitto.conf(5)<br>
-		           man:mosquitto(8)<br>
-		 Main PID: 30144 (code=exited, status=0/SUCCESS)<br>
+	> 
+	> ● mosquitto.service - Mosquitto MQTT v3.1/v3.1.1 Broker
+	> Loaded: loaded (/lib/systemd/system/mosquitto.service; enabled; vendor preset: enabled)
+	> Active: active (running) since Tue 2020-06-09 03:08:23 EDT; 4min 34s ago
+	>  Docs: man:mosquitto.conf(5)
+	>        man:mosquitto(8)
+	> Main PID: 13905 (mosquitto)
+	> Tasks: 1 (limit: 4915)
+	> Memory: 924.0K
+	> CGroup: /system.slice/mosquitto.service
+	>        └─13905 /usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf
+	> 	
+	> Jun 09 03:08:23 raspberrypi6 systemd[1]: Starting Mosquitto MQTT v3.1/v3.1.1 Broker...
+	> Jun 09 03:08:23 raspberrypi6 systemd[1]: Started Mosquitto MQTT v3.1/v3.1.1 Broker.
  
 3. Create a new folder named 'bhyve' to house the bhyve node.js application files.
 
