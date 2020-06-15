@@ -137,7 +137,7 @@
 
 9. Run the application Interactively to Identify Errors
 
-	`node app.js`
+	`node -r dotenv/config app.js dotenv_config_path=/home/pi/bhvye/.env`
 
 10. Sample Console Messages after app.js startup
 	
@@ -163,7 +163,7 @@
 
 	- Option 1 (No additional software but limited restart and logging capabilities)
 	
-		`node app.js &`
+		`node -r dotenv/config app.js dotenv_config_path=/home/pi/bhvye/.env &`
 
 	- Option 2 Monitoring & Restart Capabilities (**Preferred**)
 	
