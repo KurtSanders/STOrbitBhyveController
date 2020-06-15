@@ -1,6 +1,6 @@
 # STOrbitBhyveController Proxy Node
 #### * SmartThings® Integration for the b•hyve™ hose faucet timers *
-### Alpha Version: 0.0.1
+### Alpha Version: 0.0.2
 
 ---
 
@@ -92,14 +92,14 @@
 
 	`cd bhyve`
 
-5. Download the 'st-orbit-bhyve-controller-0.0.1.tgz' from to the 'bhyve' folder with the command below:
+5. Download the 'st-orbit-bhyve-controller-0.0.2.tgz' from to the 'bhyve' folder with the command below:
 
 	`wget https://github.com/KurtSanders/STOrbitBhyveController/raw/master/node/st-orbit-bhyve-controller-0.0.1.tgz`
 	
 6. Unpack the tarball into the 'bhyve' folder and list the files
 
 	```
-	tar -xvf st-orbit-bhyve-controller-0.0.1.tgz --strip-components 1
+	tar -xvf st-orbit-bhyve-controller-0.0.2.tgz --strip-components 1
 	ls -la
 	```
 
@@ -130,7 +130,7 @@
 	| `ST_DEBUG=false`| Required | Set ST_DEBUG=true to generate verbose console messages for debugging, ST_DEBUG=false will restrict debug messages| 
 	| `ST_REFRESH_INTERVAL_SEC=15` | Required | ST Polling Interval (Do not exceed a value of 15 or less than 10) |
 	| `WEBSERVER_PORT=3000` | Required | If this listening port is changed due to a local server conflict, it must be changed in the ST User Preferences Section |
-	| `PUSHOVER_MESSAGING=false`| Required | Off by default.  [Pushover Messaging Service](https://pushover.net)   You MUST have a Pushover account to have messages sent to Pushover.  Change PUSHOVER_MESSAGING=true and your USER and TOKEN values are required below. 
+	| `PUSHOVER_MESSAGING=false`| Required | false is the default and true will send messages to Pushover.  [Pushover Messaging Service](https://pushover.net)   You MUST have a Pushover account to have messages sent to Pushover.  Change PUSHOVER_MESSAGING=true and your USER and TOKEN values are required below. 
 	| `PUSHOVER_USER=`    | Required | Pushover user string| 
 	| `PUSHOVER_TOKEN=`	| Required | Pushover token string| 
 
