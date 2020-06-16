@@ -1,6 +1,6 @@
 # STOrbitBhyveController Proxy Node
 #### * SmartThings® Integration for the b•hyve™ hose faucet timers *
-### Alpha Version: 0.0.2
+### Alpha Testing Version: 0.0.2
 
 ---
 
@@ -13,15 +13,14 @@
 ## Requirements:
 
 1. Lots of patience and consideration for this very rough alpha release that will require several more hours/days/weeks of debugging and re-testing.  *I am not a Javascript/Node developer by nature, but I feel this language/platform is optimal for creating the asynchronous Websocket connection and API integration with SmartThings.*
-3. Make a backup of your server in case you want to return to the state before the install
-4. Advanced knowledge of Raspberry Pi OS (previously called Raspbian) , Node, NPM, Javascript, File Editing, MQTT, etc
-5. Raspberry Pi Server
-	* Model 3 or higher for performance 
-	* Debian Version Stretch or Buster
-6. Orbit Bhyve Controller SmartApp
-	* [Version 4+](https://github.com/KurtSanders/STOrbitBhyveController)
-7. Node/NPM
-8. Nano editor or your choice for text editor
+2. A **'Node.js'** compatible server on local lan
+	* (e.g. Raspberry Pi Server, etc)
+		* Model 3 or higher for performance 
+		* Debian Version Stretch or Buster
+3. Advanced knowledge of Linux commands and system, Node, NPM, Javascript, File Editing, MQTT, etc
+4. SmartThings hub
+	* Orbit Bhyve Controller SmartApp Installed [Version 4+](https://github.com/KurtSanders/STOrbitBhyveController)
+5. Text file editor of your choice (e.g. Nano, etc)
 
 
 ## Installation & Configuration
@@ -30,9 +29,8 @@
 
 ### Orbit Bhyve Controller SmartApp
 
-1. Complete the following information in the SmartApp preferences.
-2. Complete API Setup and obtain the oauth API string from the ST IDE Live Logging view 
-3. Enter the local IP address of the Raspberry Pi server and webserver port
+1. Enable the Orbit Bhyve Controller SmartApp API Setup and obtain the API strings displayed from the ST IDE Live Logging view of Orbit Bhyve Controller SmartApp  ([See 'ST IDE Live Logging View' below for details](https://github.com/KurtSanders/STOrbitBhyveController/tree/master/node#st-ide-live-logging-view))
+2. Enter the local IP address of the proxy server and webserver port as required
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/screenshots/NodeProxySetup.jpg" width=400>
@@ -47,7 +45,11 @@
 </p>
  
 
-### Raspberry Pi Server
+### Node.js Server
+
+> These instructions are for a Raspberry Pi proxy server, please modify for alternate servers as needed
+
+_It is highly recommended to make a backup of your server in case you want to return to the state before this install_
 
 1. Install Node.js and npm *(If not already installed)*
 
@@ -70,19 +72,19 @@
  	`sudo systemctl status mosquitto`	
 
 	> 
-	> ● mosquitto.service - Mosquitto MQTT v3.1/v3.1.1 Broker
-	> Loaded: loaded (/lib/systemd/system/mosquitto.service; enabled; vendor preset: enabled)
-	> Active: active (running) since Tue 2020-06-09 03:08:23 EDT; 4min 34s ago
-	>  Docs: man:mosquitto.conf(5)
-	>        man:mosquitto(8)
-	> Main PID: 13905 (mosquitto)
-	> Tasks: 1 (limit: 4915)
-	> Memory: 924.0K
-	> CGroup: /system.slice/mosquitto.service
-	>        └─13905 /usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf
-	> 	
-	> Jun 09 03:08:23 raspberrypi6 systemd[1]: Starting Mosquitto MQTT v3.1/v3.1.1 Broker...
-	> Jun 09 03:08:23 raspberrypi6 systemd[1]: Started Mosquitto MQTT v3.1/v3.1.1 Broker.
+	> ● mosquitto.service - Mosquitto MQTT Broker<br>
+	> Loaded: loaded (/lib/systemd/system/mosquitto.service; enabled; vendor preset: enabled)<br>
+	> Active: active (running)<br>
+	>  Docs: man:mosquitto.conf(5)<br>
+	>        man:mosquitto(8)<br>
+	> Main PID: 13905 (mosquitto)<br>
+	> Tasks: 1 (limit: 4915)<br>
+	> Memory: 924.0K<br>
+	> CGroup: /system.slice/mosquitto.service<br>
+	>        └─13905 /usr/sbin/mosquitto -c /etc/mosquitto/mosquitto.conf<br>
+	> 	<br>
+	> systemd[1]: Starting Mosquitto MQTT Broker...<br>
+	> systemd[1]: Started Mosquitto MQTT Broker.<br>
  
 3. Create a new folder named 'bhyve' to house the bhyve node.js application files.
 
@@ -92,14 +94,14 @@
 
 	`cd bhyve`
 
-5. Download the 'st-orbit-bhyve-controller-0.0.2.tgz' from to the 'bhyve' folder with the command below:
+5. Download the 'st-orbit-bhyve-controller-x.x.x.tgz' where x.x.x below is the [current version of this file](https://github.com/KurtSanders/STOrbitBhyveController/tree/master/node) to the server's 'bhyve' folder with the wget command below:
 
-	`wget https://github.com/KurtSanders/STOrbitBhyveController/raw/master/node/st-orbit-bhyve-controller-0.0.1.tgz`
+	`wget https://github.com/KurtSanders/STOrbitBhyveController/raw/master/node/st-orbit-bhyve-controller-x.x.x.tgz`
 	
-6. Unpack the tarball into the 'bhyve' folder and list the files
+6. Unpack the downloaded tarball where x.x.x is the [current version](https://github.com/KurtSanders/STOrbitBhyveController/tree/master/node) into the 'bhyve' folder and list the files
 
 	```
-	tar -xvf st-orbit-bhyve-controller-0.0.2.tgz --strip-components 1
+	tar -xvf st-orbit-bhyve-controller-x.x.x.tgz --strip-components 1
 	ls -la
 	```
 
@@ -137,7 +139,7 @@
 
 9. Run the application Interactively to Identify Errors
 
-	`node -r dotenv/config app.js dotenv_config_path=/home/pi/bhvye/.env`
+	`node app.js`
 
 10. Sample Console Messages after app.js startup
 	
@@ -163,7 +165,7 @@
 
 	- Option 1 (No additional software but limited restart and logging capabilities)
 	
-		`node -r dotenv/config app.js dotenv_config_path=/home/pi/bhvye/.env &`
+		`node app.js &`
 
 	- Option 2 Monitoring & Restart Capabilities (**Preferred**)
 	
