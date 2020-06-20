@@ -11,6 +11,9 @@ const EventEmitter = require('events').EventEmitter
 const inherits = require('util').inherits
 const WebSocket = require('ws')
 const chalk = require('chalk');
+const dotenv = require('dotenv');
+const myEnv = dotenv.config().parsed
+
 var tty = require('tty');
 
 const log = console.log;
@@ -18,9 +21,7 @@ const get = require('lodash.get');
 
 var PINGCOUNTER = 0
 var MYDEVICES = {}
-const PUSHOVER_MESSAGING =  (/true/i).test(process.env.PUSHOVER_MESSAGING)
-
-if (PUSHOVER_MESSAGING) log(chalk.green(`${ts()} - Pushover Service defined for Messaging`))	
+const PUSHOVER_MESSAGING =  (/true/i).test(process.env.PUSHOVER_MESSAGING) || false
 
 function ts() {
     var options = {
@@ -114,6 +115,7 @@ Client.prototype.connect = function(cfg) {
 }
 
 Client.prototype.send_message = function send_message(msgData, title = "Orbit Nodejs Proxy Server") {
+
     if (!PUSHOVER_MESSAGING) {return}
     
     log(chalk.yellow(`${ts()} - Sending PushOver '${msgData}'`))
@@ -199,7 +201,7 @@ Client.prototype.webserver = function() {
         return 
       }
       log(chalk.red(`${ts()} - STOrbitBhyveController™ Webserver is listening on port: ${port}`))
-//      if (process.env.PUSHOVER_MESSAGING) push.send('Orbit Server', `${ts()} - STOrbitBhyveController™ Webserver is listening on port: ${port}`)
+//      if (PUSHOVER_MESSAGING) push.send('Orbit Server', `${ts()} - STOrbitBhyveController™ Webserver is listening on port: ${port}`)
     })
 }
 
@@ -336,7 +338,7 @@ Client.prototype.send = function(message) {
 Client.prototype.connectStream = function() {
     var self = this
     if (self.config.debug) log(`${ts()} - ` + 'Client.prototype.connectStream')
-    if (process.env.PUSHOVER_MESSAGING) self.send_message("NODEjs Client.prototype.connectStream", `${ts()} - Started WebSocket`);
+    if (PUSHOVER_MESSAGING) self.send_message(`${ts()} - Started WebSocket`);
 
     self._stream = new WebSocket(self.config.wssURL, {
         handshakeTimeout: self.config.wsTimeout
@@ -362,13 +364,13 @@ Client.prototype.connectStream = function() {
                 self._stream.send('{"event":"ping"}')
             } else { 
                 log(chalk.red(`${ts()} WebSocket readyState is CLOSED rc = ${self._stream.readyState}`))
-                if (process.env.PUSHOVER_MESSAGING) self.send_message("NODEjs Servere Error WebSocket Closed");
+                if (PUSHOVER_MESSAGING) self.send_message("NODEjs Servere Error WebSocket Closed");
                 self.emit('restart')
 //                process.exit(2)
             }
         } catch(e) {
             log (chalk.red(`${ts()} WebSocket ERROR - ${e}`))
-            if (process.env.PUSHOVER_MESSAGING) self.send_message("NODEjs WebSocket Servere Error", `${ts()} - ${e}`);
+            if (PUSHOVER_MESSAGING) self.send_message("NODEjs WebSocket Servere Error", `${ts()} - ${e}`);
         }
 
         setTimeout(sendPing, process.env.ST_REFRESH_INTERVAL_SEC * 1000)
@@ -397,7 +399,7 @@ Client.prototype.connectStream = function() {
 
     self._stream.on('close', function(num, reason) {
         if (!self.config.debug) log(`${ts()} - close: ` + num + ' reason: ' + reason)
-        if (process.env.PUSHOVER_MESSAGING) self.send_message("NODEjs Servere Error", `${ts()} - websocket stream close: ${num} reason: ${reason}`);
+        if (PUSHOVER_MESSAGING) self.send_message("NODEjs Servere Error", `${ts()} - websocket stream close: ${num} reason: ${reason}`);
     })
 
     self._stream.on('ping', function(data) {
@@ -406,7 +408,7 @@ Client.prototype.connectStream = function() {
 
     self._stream.on('unexpected-response', function(request, response) {
         console.error(`${ts()} - unexpected-response / request: ` + request + ' response: ' + response)
-        if (process.env.PUSHOVER_MESSAGING) self.send_message("NODEjs Servere Error", `${ts()} - websocket stream - unexpected-response / request: ${request} response: ${response}`);
+        if (PUSHOVER_MESSAGING) self.send_message("NODEjs Servere Error", `${ts()} - websocket stream - unexpected-response / request: ${request} response: ${response}`);
     })
 }
 

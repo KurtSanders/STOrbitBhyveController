@@ -21,8 +21,9 @@ const process = require('process');
 const forEach = require('lodash.foreach');
 
 // Define process constants from .env file and set misssing data values if null
-const ST_DEBUG = (/true/i).test(process.env.ST_DEBUG) || false
-const ST_TEST = (/true/i).test(process.env.ST_TEST) || false
+const ST_DEBUG              = (/true/i).test(process.env.ST_DEBUG) || false
+const ST_TEST               = (/true/i).test(process.env.ST_TEST) || false
+const PUSHOVER_MESSAGING    = (/true/i).test(process.env.PUSHOVER_MESSAGING) || false
 const ENABLE_FLOW_SENSOR_AUTO = (/true/i).test(process.env.ENABLE_FLOW_SENSOR_AUTO) || false
 const ENABLE_FLOW_SENSOR_INTERVAL_MS = process.env.ENABLE_FLOW_SENSOR_INTERVAL_MS || 1500
 const ENABLE_FLOW_SENSOR_DURATION_SEC = process.env.ENABLE_FLOW_SENSOR_DURATION_SEC|| 75
