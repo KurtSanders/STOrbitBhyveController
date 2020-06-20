@@ -21,9 +21,9 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
 
-String appVersion()	 	{ return "4.02" }
-String appModified() 	{ return "2020-06-08" }
-String appDesc()		{"Support for Orbit Single and Multi-zone Timers"}
+String appVersion()	 	{ return "4.03" }
+String appModified() 	{ return "2020-06-19" }
+String appDesc()		{"Support for Orbit Single/Multi-zone Timers and Proxy Node Server"}
 
 definition(
     name: 		"Orbit Bhyve Controller",
@@ -347,7 +347,7 @@ def webEvent() {
             case 'change_mode':
             if (!data.containsKey("mode")) return
             def station = data.containsKey('stations')?data.stations.station:1
-            def d = getChildDevice(DTHDNI("${data.device_id}:${stations}"))
+            def d = getChildDevice(DTHDNI("${data.device_id}:${station}"))
             if (d) {
                 d.sendEvent(name:"run_mode", value: data.mode, displayed: false)
             }
@@ -357,8 +357,26 @@ def webEvent() {
                 send_message("Check your Orbit watering device for a low battery condition")
             }
             break
-            case 'watering_events':
+            case 'flow_sensor_state_changed':
+            def station = data.containsKey('stations')?data.stations.station:1
+            def d = getChildDevice(DTHDNI("${data.device_id}:${station}"))
+            if (d) {
+                def cycle_volume_gal = data.cycle_volume_gal?:null
+                if (cycle_volume_gal) {
+                    d.sendEvent(name:"water_volume_gal", value: cycle_volume_gal, descriptionText:"${cycle_volume_gal} gallons")
+                }
+
+                def flow_rate_gpm = data.flow_rate_gpm?:null
+                if (flow_rate_gpm) {
+                    d.sendEvent(name:"banner", value: "Active Flow Rate: ${flow_rate_gpm}gpm", displayed: false )
+                } else {log.error "Error in obtaining the flow_rate_gpm from 'flow_sensor_state_changed' webevent"}
+
+            } else {log.error "Error in obtaining the DTHDNI from 'flow_sensor_state_changed' webevent"}
+            break
             case 'program_changed':
+            runIn(15, "refresh")
+            break
+            case 'watering_events':
             case 'watering_in_progress_notification':
             case 'watering_complete':
             runIn(5, "refresh")
@@ -370,8 +388,8 @@ def webEvent() {
             log.debug "Skipping WebEvent ${data.event}"
             break
         }
-}
     }
+}
 
 def allDeviceStatus() {
     def results = [:]
@@ -397,15 +415,11 @@ def allDeviceStatus() {
 
 def appTouchHandler(evt="") {
     log.info "App Touch ${random()}: '${evt.descriptionText}' at ${timestamp()}"
-    main()
     app.getChildDevices().each{
         def d = getChildDevice(it.deviceNetworkId)
-        if (d.name == "Bhyve Back - Walkout") {
-            def valveState = (d.latestValue('valve')=="closed")?"open":"closed"
-            log.trace "${d.name} will be set to ${valveState}"
-            d.sendEvent(name:"valve", value: valveState )
-        }
+        log.info "Updating status on ${d.name}"
     }
+    main()
 }
 
 def sendRequest(valveState,device_id,zone,run_time) {
@@ -433,7 +447,7 @@ def sendRequest(valveState,device_id,zone,run_time) {
 }
 
 def makeHtmlColor(data,color='red') {
-return "<font color='${color}'>${data}</font>"
+    return "<font color='${color}'>${data}</font>"
 }
 
 def valveHandler(evt) {
