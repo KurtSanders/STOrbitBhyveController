@@ -135,9 +135,9 @@ _It is highly recommended to make a backup of your server in case you want to re
 	| `PUSHOVER_MESSAGING=false`| Required | false is the default and true will send messages to Pushover.  [Pushover Messaging Service](https://pushover.net)   You MUST have a Pushover account to have messages sent to Pushover.  Change PUSHOVER_MESSAGING=true and your USER and TOKEN values are required below. 
 	| `PUSHOVER_USER=`    | Required | Pushover API user string| 
 	| `PUSHOVER_TOKEN=`	| Required | Pushover API token string| 
-| `ENABLE_FLOW_SENSOR_AUTO=false` | Required |Default = false and changing this to true may have undesired impact on the watering device (i.e. battery drain, network usage, etc)|
-| `ENABLE_FLOW_SENSOR_INTERVAL_MS=1500` | Required | Default = 1500 and changing this value does not appear to have any impact. |
-| `ENABLE_FLOW_SENSOR_DURATION_SEC=75` | Required | Default = 1500 and changing this value does not appear to have any impact.|
+   | `ENABLE_FLOW_SENSOR_AUTO=false` | Required |Default = false and changing this to true may have undesired impact on the watering device (i.e. battery drain, network usage, etc)|
+   | `ENABLE_FLOW_SENSOR_INTERVAL_MS=1500` | Required | Default = 1500 and changing this value does not appear to have any impact. |
+   | `ENABLE_FLOW_SENSOR_DURATION_SEC=75` | Required | Default = 1500 and changing this value does not appear to have any impact.|
 
 
 9. Run the application Interactively to Identify Errors
