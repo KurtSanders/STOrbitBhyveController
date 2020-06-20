@@ -2,7 +2,7 @@
   "name": "st-orbit-bhyve-controller",
   "description": "A Node/MQTT gateway for integrating a Orbit B-Hyve Watering WiFi Timer with real-time control by SmartThings API",
   "main": "app.js",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "keywords": [
     "orbit bhyve",
     "SmartThings",

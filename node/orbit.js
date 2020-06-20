@@ -18,8 +18,9 @@ const get = require('lodash.get');
 
 var PINGCOUNTER = 0
 var MYDEVICES = {}
+const PUSHOVER_MESSAGING =  (/true/i).test(process.env.PUSHOVER_MESSAGING)
 
-if (process.env.PUSHOVER_MESSAGING) log(chalk.green(`${ts()} - Pushover Service defined for Messaging`))	
+if (PUSHOVER_MESSAGING) log(chalk.green(`${ts()} - Pushover Service defined for Messaging`))	
 
 function ts() {
     var options = {
@@ -112,8 +113,9 @@ Client.prototype.connect = function(cfg) {
         .catch(doReject)
 }
 
-Client.prototype.send_message = function send_message(msgData, title = "Orbit Nodejs Server") {
-    if (process.env.PUSHOVER_MESSAGING=='false') {return}
+Client.prototype.send_message = function send_message(msgData, title = "Orbit Nodejs Proxy Server") {
+    if (!PUSHOVER_MESSAGING) {return}
+    
     log(chalk.yellow(`${ts()} - Sending PushOver '${msgData}'`))
     var self    = this
     var data = {
@@ -327,7 +329,7 @@ Client.prototype.devices = function() {
 
 Client.prototype.send = function(message) {
     var self = this
-    if (self.config.debug) log('send json: ' + JSON.stringify(message))
+    if (!self.config.debug) log('SEND JSON STRING TO MQTT: ' + JSON.stringify(message))
     self._stream.send(JSON.stringify(message))
 }
 

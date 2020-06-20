@@ -1,6 +1,6 @@
 # STOrbitBhyveController Proxy Node
 #### * SmartThings® Integration for the b•hyve™ hose faucet timers *
-### Alpha Testing Version: 0.0.2
+### Alpha Testing Version: 0.0.3
 
 ---
 
@@ -9,6 +9,7 @@
 1. Support for controlling 'open' or 'closed' Bhyve states from SmartThings.   
 2. Pushover Messaging Integration
 3. Builds upon the base code for interfacing SmartThings and b•hyve™ with a Node.js/MQTT/Websocket server for real-time response.
+4. Auto Flow Sensor after a watering notification event which will report more detailed flow rate and total gallons to ST.
 
 ## Requirements:
 
@@ -133,8 +134,11 @@ _It is highly recommended to make a backup of your server in case you want to re
 	| `ST_REFRESH_INTERVAL_SEC=15` | Required | ST Polling Interval (Do not exceed a value of 15 or less than 10) |
 	| `WEBSERVER_PORT=3000` | Required | If this listening port is changed due to a local server conflict, it must be changed in the ST User Preferences Section |
 	| `PUSHOVER_MESSAGING=false`| Required | false is the default and true will send messages to Pushover.  [Pushover Messaging Service](https://pushover.net)   You MUST have a Pushover account to have messages sent to Pushover.  Change PUSHOVER_MESSAGING=true and your USER and TOKEN values are required below. 
-	| `PUSHOVER_USER=`    | Required | Pushover user string| 
-	| `PUSHOVER_TOKEN=`	| Required | Pushover token string| 
+	| `PUSHOVER_USER=`    | Required | Pushover API user string| 
+	| `PUSHOVER_TOKEN=`	| Required | Pushover API token string| 
+| `ENABLE_FLOW_SENSOR_AUTO=false` | Required |Default = false|
+| `ENABLE_FLOW_SENSOR_INTERVAL_MS=1500` | Required | Default = 1500 |
+| `ENABLE_FLOW_SENSOR_DURATION_SEC=75` | Required | Default = 1500 |
 
 
 9. Run the application Interactively to Identify Errors

@@ -6,7 +6,7 @@
  * Bill Church - https://github.com/billchurch/bhyve-mqtt
  * Kurt Sanders - https://github.com/KurtSanders/STOrbitBhyveController
  */
-
+const version = '0.0.3'
 const Ajv = require('ajv');
 const Orbit = require('./orbit');
 const mqtt = require('mqtt');
@@ -19,12 +19,14 @@ const myEnv = dotenv.config().parsed
 const chalk = require('chalk');
 const process = require('process');
 const forEach = require('lodash.foreach');
-console.log(process.env);
-// const DEBUG = (/true/i).test(myEnv.ST_DEBUG)
-// const TEST = (/true/i).test(myEnv.ST_TEST)
-console.log(`process.env.ST_DEBUG = ${process.env.ST_DEBUG}`)
-const DEBUG = (/true/i).test(process.env.ST_DEBUG)
-const TEST = (/true/i).test(process.env.ST_TEST)
+
+// Define process constants from .env file and set misssing data values if null
+const ST_DEBUG = (/true/i).test(process.env.ST_DEBUG) || false
+const ST_TEST = (/true/i).test(process.env.ST_TEST) || false
+const ENABLE_FLOW_SENSOR_AUTO = (/true/i).test(process.env.ENABLE_FLOW_SENSOR_AUTO) || false
+const ENABLE_FLOW_SENSOR_INTERVAL_MS = process.env.ENABLE_FLOW_SENSOR_INTERVAL_MS || 1500
+const ENABLE_FLOW_SENSOR_DURATION_SEC = process.env.ENABLE_FLOW_SENSOR_DURATION_SEC|| 75
+
 var DEVICEMAPLAST = {}
 var MCLIENT_ONLINE = false
 var REFRESHCOUNTER = 0
@@ -49,22 +51,21 @@ function ts() {
     var d = new Date();
     return d.toLocaleDateString("en-US", options);
 }
-log(chalk.bold.red('KurtSanders/STOrbitBhyveController\n'))
-log(chalk.blue('b•hyve™ API Integration by Bill Church'))
-log(chalk.green('SmartThings™ API Integration by SanderSoft™ 2019\n===================================================\n'))
+log(chalk.bold.red('KurtSanders/STOrbitBhyveController'))
+log(chalk.bold.blue(`Version: ${version}`))
+log(chalk.green('SmartThings™ API Integration by SanderSoft™\n===================================================\n'))
 
-log(chalk.green(`${ts()} - Setting a reoccurring 'Keep Connection alive Ping' to execute every ${process.env.ST_REFRESH_INTERVAL_SEC} seconds`))
 
 log(chalk.blue("*".repeat(100)))
-// Object.entries(myEnv).forEach(entry => {
-forEach(process.env, (value, key) => {
-//    let key = entry[0];
-//    let value = entry[1];
+Object.entries(myEnv).forEach(entry => {
+    let key = entry[0];
+    let value = entry[1];
     key.includes('PASSWORD') ? value = '*'.repeat(value.length) : ''    
-//    log(chalk.blue(`${key.padEnd(Math.max(...Object.keys(myEnv).map(el => el.length)) + 2, '.')}: ${value}`))
-    log(chalk.blue(`${key.padEnd(25,'.')}: ${value}`))
+    log(chalk.blue(`* ${key.padEnd(Math.max(...Object.keys(myEnv).map(el => el.length)) + 2, '.')}: ${value}`))
 });
 log(chalk.blue("*".repeat(100)))
+
+log(chalk.green(`${ts()} - Setting a reoccurring 'Keep Connection alive Ping' to execute every ${process.env.ST_REFRESH_INTERVAL_SEC} seconds`))
 
 const oClient = new Orbit()
 
@@ -91,7 +92,7 @@ function refreshDevices() {
 }
 
 process.on('SIGINT', function(data) {
-    log(`\n${ts()} - Ctrl-C interrupt signal '${data} detected' - Shutting down`);
+    log(chalk.bold.red(`\n${ts()} - Ctrl-C interrupt signal '${data} detected' - gracefully shutting down`));
     process.exit()
 });
 
@@ -113,12 +114,12 @@ let publishHandler = function(err) {
     if (err) {
         return console.error(err)
     }
-    if (DEBUG) log(`${ts()} - mqtt publish`)
+    if (ST_DEBUG) log(`${ts()} - mqtt publish`)
 }
 
 // connect to oClient once mqtt is up:
 mClient.on('connect', function() {
-    if (DEBUG) log(`${ts()} - MQTT connected at ${process.env.MQTT_BROKER_ADDRESS}`)
+    if (ST_DEBUG) log(`${ts()} - MQTT connected at ${process.env.MQTT_BROKER_ADDRESS}`)
     MCLIENT_ONLINE = true
     oClient.send_message(`${ts()} - MQTT connected at ${process.env.MQTT_BROKER_ADDRESS}`)
     process.send('ready')
@@ -133,20 +134,20 @@ mClient.on('connect', function() {
 // once we get a token, publish alive message
 oClient.on('token', (token) => {
     if (MCLIENT_ONLINE) mClient.publish('bhyve/alive', ts(), publishHandler)
-    if (DEBUG) log(`${ts()} - Token: ${token}`)
+    if (ST_DEBUG) log(`${ts()} - Token: ${token}`)
 })
 
 oClient.on('user_id', (userId) => {
-    if (DEBUG) log(`${ts()} - user_id: ${userId}`)
+    if (ST_DEBUG) log(`${ts()} - user_id: ${userId}`)
     oClient.devices()
 })
 
 oClient.on('device_id', (deviceId) => {
-    if (DEBUG) log(`${ts()} - device_id: ${deviceId}`)
+    if (ST_DEBUG) log(`${ts()} - device_id: ${deviceId}`)
 })
 
 oClient.on('waterValve', (dataObj) => {
-    if (!DEBUG) log(`${ts()} - waterValve '==> '${JSON.stringify(dataObj)}'`)
+    if (!ST_DEBUG) log(`${ts()} - waterValve '==> '${JSON.stringify(dataObj)}'`)
     var message = JSON.stringify({ 
         "state": dataObj.state, 
         "time" : dataObj.run_time 
@@ -159,30 +160,30 @@ oClient.on('waterValve', (dataObj) => {
 
 
 oClient.on('restart',() => {
-    if (!DEBUG) log(`${ts()} - Restarting WebSocket`)
+    if (!ST_DEBUG) log(`${ts()} - Restarting WebSocket`)
     oClient.send_message(`${ts()} - Restarting WebSocket`)
     oClient.connectStream()
 })
 
 let subscribeHandler = function(topic) {
-    if (DEBUG) log(`${ts()} - subscribe topic: ` + topic)
+    if (ST_DEBUG) log(`${ts()} - subscribe topic: ` + topic)
     mClient.subscribe(topic, (err, granted) => {
         if (err) {
             console.error(`mClient.subscribe ${topic} error:`)
             console.error('    ' + err)
         }
-        if (DEBUG) log(`${ts()} -> granted: ` + JSON.stringify(granted))
+        if (ST_DEBUG) log(`${ts()} -> granted: ` + JSON.stringify(granted))
     })
 }
 
 oClient.on('watering_events', (data) => {
-    if (DEBUG) showData(data,true)
+    if (ST_DEBUG) showData(data,true)
     data.event = "watering_events"
     var lastarray = data.irrigation.length - 1
     data.irrigation = data.irrigation[lastarray]
     
     if (!isEqual(data, LASTWATERING)) {
-        if (TEST) {
+        if (ST_TEST) {
             log(chalk.red(`${ts()} ${MYDEVICES[data.device_id]} -> FAKE POSTING Watering Updates to SmartThings API`))
         } else {
             log(chalk.green(`${ts()} ${MYDEVICES[data.device_id]} -> POSTING Watering Updates to SmartThings API`))
@@ -198,7 +199,7 @@ oClient.on('watering_events', (data) => {
 
 oClient.on('devices', (data) => {
 	var deviceActive = new Boolean(false)
-    if (DEBUG) showData(data,true)
+    if (ST_DEBUG) showData(data,true)
     if (MCLIENT_ONLINE) {
         let devices = []
         subscribeHandler(`bhyve/device/refresh`)
@@ -227,11 +228,11 @@ oClient.on('devices', (data) => {
                         oClient.watering_events(`${deviceId}`)
                         deviceActive = true
                         if (REFRESHCOUNTER == 0) {
-                            log(chalk.green(`${ts()} - ${JSON.stringify(data[prop].name)} valve is reporting a 'OPEN' state`))
-                            oClient.send_message(`${JSON.stringify(data[prop].name)} valve is reporting a 'OPEN' state`)
+                            log(chalk.green(`${ts()} - ${JSON.stringify(data[prop].name)} valve is reporting an 'OPEN' state`))
+                            oClient.send_message(`${JSON.stringify(data[prop].name)} valve is reporting an 'OPEN' state`)
                         }
                     } else {
-                        if (DEBUG)log(chalk.red(lineout))
+                        if (ST_DEBUG)log(chalk.red(lineout))
                     }
                     
                     if (typeof data[prop].status.watering_status === 'object') {
@@ -261,7 +262,7 @@ oClient.on('devices', (data) => {
         
         mClient.publish(`bhyve/devices`, JSON.stringify(devices))
         if (!isEqual(deviceMap, DEVICEMAPLAST)) {
-            if (TEST) {
+            if (ST_TEST) {
                 log(chalk.red(`${ts()} - All Devices -> FAKE POSTING Device Updates to SmartThings API`))
             } else {
                 log(chalk.green(`${ts()} - All Devices -> POSTING Device Updates to SmartThings API`))
@@ -280,7 +281,7 @@ oClient.on('devices', (data) => {
 })
 
 const parseMessage = (topic, message) => {
-    if (!DEBUG) log(`${ts()} - RECEIVED parseMessage topic: '${topic}' - message: '${message}'`)
+    if (!ST_DEBUG) log(`${ts()} - RECEIVED parseMessage topic: '${topic}' - message: '${message}'`)
     switch (topic) {
         case ('bhyve/command'):
             log(`${ts()} - ${topic} =>${message}<= received`)
@@ -328,7 +329,7 @@ const parseMessage = (topic, message) => {
                 throw new Error(JSON.stringify(JSONvalidate.errors))
             }
             let myJSON = {}
-            if (DEBUG) log(`${ts()} - deviceId: ` + deviceId + ' station: ' + station + ' command: ' + require('util').inspect(command))
+            if (ST_DEBUG) log(`${ts()} - deviceId: ` + deviceId + ' station: ' + station + ' command: ' + require('util').inspect(command))
             switch (command.state.toLowerCase()) {
                 case 'on':
                     log(`${ts()} - is on`)
@@ -365,7 +366,7 @@ const parseMessage = (topic, message) => {
                     break
             }
             oClient.send(myJSON)
-            if (DEBUG) log(`${ts()} - myJSON: ` + JSON.stringify(myJSON))
+            if (ST_DEBUG) log(`${ts()} - myJSON: ` + JSON.stringify(myJSON))
             break
             // bhyve/device/{device_id}/refresh
             // to do: refresh individual device instead of all
@@ -406,18 +407,42 @@ const parseMode = (data) => {
 
 oClient.on('st-message', (data) => {
     let event = data.event
+    let enable_flow_sensor_JSON = {}
     var ok2send = false
     var diffdata = {}
     switch (event) {
-        case 'program_changed':
-        case 'watering_complete':
         case 'watering_in_progress_notification':
+            if (ENABLE_FLOW_SENSOR_AUTO) {
+                enable_flow_sensor_JSON = {
+                    'device_id'     : data.device_id,
+                    'event'         : 'enable_flow_sensor',
+                    'interval_ms'   : ENABLE_FLOW_SENSOR_INTERVAL_MS,
+                    'duration_sec'  : ENABLE_FLOW_SENSOR_DURATION_SEC
+                }
+                log(chalk.magenta(`${ts()} ${MYDEVICES[data.device_id]} -> AUTO SENDING "enable_flow_sensor" ${JSON.stringify(enable_flow_sensor_JSON,null,0)} event to bhyve MQTT `))
+                oClient.send(enable_flow_sensor_JSON)
+            }
+        case 'watering_complete':
+        case 'program_changed':
+        case 'flow_sensor_state_changed':
+            var removeItemList = ['timestamp','cycle_run_time_sec','client-topics','gateway-topic','stream-id']
+            removeItemList.forEach(function (item) {
+                try {
+                    delete data[item];
+                } catch(error) {
+                    console.log(error.name);
+                    console.log(error.message);
+                }
+            });
+            data.cycle_volume_gal = (Math.round(data.cycle_volume_gal * 10) / 10) || 0,
+            data.flow_rate_gpm = (Math.round(data.flow_rate_gpm * 10) / 10) || 0,
+            log(chalk.magenta(`${ts()} ${MYDEVICES[data.device_id]} -> flow data -> ${JSON.stringify(data,null,0)} `))
         case 'change_mode':
         case 'low_battery':
             ok2send = true
             break
         default:
-            if (DEBUG) console.error(`${ts()} ${MYDEVICES[data.device_id]} -> SKIPPING Event '${data.event}'`)
+            if (ST_DEBUG) console.error(`${ts()} ${MYDEVICES[data.device_id]} -> SKIPPING Event '${data.event}'`)
             break
     }
 
@@ -429,11 +454,12 @@ oClient.on('st-message', (data) => {
             diffdata = diff(LASTEVENT[event], data)
             diffdata.device_id = data.device_id
             diffdata.event = data.event
-            if (TEST) {
+            if (ST_TEST) {
                 log(chalk.red(`${ts()} ${MYDEVICES[data.device_id]} -> FAKE SENDING ${data.event} ${JSON.stringify(diffdata,null,0)} to SmartThings`))
             } else {
                 log(chalk.green(`${ts()} ${MYDEVICES[data.device_id]} -> SENDING ${data.event} ${JSON.stringify(diffdata,null,0)} to SmartThings`))
-                oClient.smartthings(data)
+                oClient.smartthings(data)                
+                log(chalk.red(`${ts()} ${MYDEVICES[data.device_id]} -> SENDING ${JSON.stringify(enable_flow_sensor_JSON,null,0)} to bhyve MQTT`))
             }
             LASTEVENT[event] = data
         }
@@ -444,7 +470,7 @@ oClient.on('st-message', (data) => {
 oClient.on('message', (data) => {
     let event = data.event
     if (event != 'clear_low_battery') {
-        if (!DEBUG) log(`${ts()} ${MYDEVICES[data.device_id]} -> message: ` + JSON.stringify(data, replacer, 0))
+        if (!ST_DEBUG) log(`${ts()} ${MYDEVICES[data.device_id]} -> message: ` + JSON.stringify(data, replacer, 0))
         if (MCLIENT_ONLINE) mClient.publish('bhyve/message', JSON.stringify(data))
         if (data == 'refresh') oClient.devices()
     }
