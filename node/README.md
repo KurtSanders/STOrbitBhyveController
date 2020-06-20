@@ -48,7 +48,7 @@
 
 ### Node.js Server
 
-> These instructions are for a Raspberry Pi proxy server, please modify for alternate servers as needed
+> These generic instructions are for a Raspberry Pi proxy server running Raspberry Pi OS (previously called Raspbian. Please modify these commands as needed for alternate servers and O/S's as needed.
 
 _It is highly recommended to make a backup of your server in case you want to return to the state before this install_
 
@@ -103,7 +103,6 @@ _It is highly recommended to make a backup of your server in case you want to re
 
 	```
 	tar -xvf st-orbit-bhyve-controller-x.x.x.tgz --strip-components 1
-	ls -la
 	```
 
 7. Install st-orbit-bhyve-controller required node modules
@@ -128,7 +127,7 @@ _It is highly recommended to make a backup of your server in case you want to re
 	| `MQTT_PASSWORD=`       | Optional | MQTT Broker access password if a password was setup during MQTT install                            |
 	| `ST_SMARTAPPURL=`       | Required | OAUTH HAS TO BE ENABLED IN THE ORBIT BHYVE CONTROLLER SMARTAPP IN THE ST IDE.  <br>The SmartThings API Rest string will be displayed in the ST Live Logging Screen when exiting the Orbit Bhyve Controller SmartApp. EXAMPLE:<BR>ST_SMARTAPPURL=https://graph.api.smartthings.com:443/api/smartapps/installations/xxxxxxxx/yyyyyyyyyyyy |
 	|`ST_SECRET=`| Required|SmartThings secret string as displayed in ST IDE Live Logging|
-	| **Advanced Section**|| (Be careful in changing from the default values below)| 
+	| **Advanced Section**|| (Be careful in changing from the default values below as unexpected behavior may be encountered)| 
 	| `ST_TEST=false`| Required | Set ST_TEST=true to prevent API POST commands to SmartThings for debugging. ST_TEST=false will send real event data to SmartThings API endpoint |
 	| `ST_DEBUG=false`| Required | Set ST_DEBUG=true to generate verbose console messages for debugging, ST_DEBUG=false will restrict debug messages| 
 	| `ST_REFRESH_INTERVAL_SEC=15` | Required | ST Polling Interval (Do not exceed a value of 15 or less than 10) |
@@ -136,9 +135,9 @@ _It is highly recommended to make a backup of your server in case you want to re
 	| `PUSHOVER_MESSAGING=false`| Required | false is the default and true will send messages to Pushover.  [Pushover Messaging Service](https://pushover.net)   You MUST have a Pushover account to have messages sent to Pushover.  Change PUSHOVER_MESSAGING=true and your USER and TOKEN values are required below. 
 	| `PUSHOVER_USER=`    | Required | Pushover API user string| 
 	| `PUSHOVER_TOKEN=`	| Required | Pushover API token string| 
-| `ENABLE_FLOW_SENSOR_AUTO=false` | Required |Default = false|
-| `ENABLE_FLOW_SENSOR_INTERVAL_MS=1500` | Required | Default = 1500 |
-| `ENABLE_FLOW_SENSOR_DURATION_SEC=75` | Required | Default = 1500 |
+| `ENABLE_FLOW_SENSOR_AUTO=false` | Required |Default = false and changing this to true may have undesired impact on the watering device (i.e. battery drain, network usage, etc)|
+| `ENABLE_FLOW_SENSOR_INTERVAL_MS=1500` | Required | Default = 1500 and changing this value does not appear to have any impact. |
+| `ENABLE_FLOW_SENSOR_DURATION_SEC=75` | Required | Default = 1500 and changing this value does not appear to have any impact.|
 
 
 9. Run the application Interactively to Identify Errors
