@@ -13,7 +13,7 @@
 
 ## Requirements:
 
-1. Lots of patience and consideration for this very rough alpha release that will require several more hours/days/weeks of debugging and re-testing.  *I am not a Javascript/Node developer by nature, but I feel this language/platform is optimal for creating the asynchronous Websocket connection and API integration with SmartThings.*
+1. Lots of patience and consideration for this very rough alpha release that will require several more hours/days/weeks of debugging and re-testing.  *I am not a Javascript/Node developer by nature, but I feel this language/platform is optimal for creating the asynchronous Websocket connection and API integration with SmartThings.  Minimal support will be provided for this distribution.*
 2. A **'Node.js'** compatible server on local lan
 	* (e.g. Raspberry Pi Server, etc)
 		* Model 3 or higher for performance 
