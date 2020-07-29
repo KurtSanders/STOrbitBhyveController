@@ -21,9 +21,9 @@ import groovy.json.JsonOutput
 import groovy.json.JsonSlurper
 
 
-String appVersion()	 	{ return "4.03" }
-String appModified() 	{ return "2020-06-19" }
-String appDesc()		{"Support for Orbit Single/Multi-zone Timers and Proxy Node Server"}
+String appVersion()	 	{ return "4.04" }
+String appModified() 	{ return "2020-07-29" }
+String appDesc()		{"Bug Fix: java.lang.NullPointerException: Cannot invoke method containsKey() on null object @line 591 (doCall)"}
 
 definition(
     name: 		"Orbit Bhyve Controller",
@@ -588,7 +588,7 @@ def updateTiles(data) {
                     }
 
                     // Check for System On/Off Mode for this device
-                    if (it.scheduled_modes.containsKey('auto') && it.scheduled_modes.containsKey('off')) {
+                    if (it.scheduled_modes?.containsKey('auto') && it.scheduled_modes?.containsKey('off')) {
                         def dateFormat = (it.scheduled_modes.auto.annually==true)?"MMdd":"YYYYMMdd"
                         def todayDate 		= new Date().format(dateFormat, location.timeZone)
                         def begAutoAtDate 	= it.scheduled_modes.auto.at?Date.parse("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",it.scheduled_modes.auto.at).format(dateFormat):''
