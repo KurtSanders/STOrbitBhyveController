@@ -1,6 +1,6 @@
 # STOrbitBhyveController
 #### * SmartThings® Integration for the b•hyve™ hose faucet timers *
-### Version: 4.03 (SmartApp) & 4.01 (DTH)
+### Version: 4.04 (SmartApp) & 4.01 (DTH)
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/readme.png" width="50">  
 [Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
 
