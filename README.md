@@ -6,9 +6,7 @@
 
 ---
 
-##### *This new version provides support for showing 'open' or 'closed' Bhyve Status and SMS/Push Messages and builds the base code for interfacing SmartThings and b•hyve™ with a Nodejs/MQTT/Websocket server for real-time response.
-
-* WebCore™ can be used to detect and act on device valve 'open' or 'closed', Rain Delay, etc events.
+#### Looking for the Hubitat™ version, it's [here](https://github.com/KurtSanders/STOrbitBhyveController/tree/master/hubitat#hubitat-orbitbhyve) and supports realtime automatically opening/closing valves, rain delays, etc.  This Hubitat App is highly recommended to be installed using [Hubitat Package Manager](https://raw.githubusercontent.com/dcmeglio/hubitat-packagemanager/master/apps/Package_Manager.groovy). You will need your Orbit BHyve username and password to connect. 
 
 ### Description:
 
