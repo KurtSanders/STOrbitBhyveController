@@ -180,17 +180,19 @@ def parse(String message) {
             if (dev) 
                 dev*.sendEvent(name: "is_connected", value: true)               
             break
-        case "device_idle":
         case "watering_complete":
             parent.debugVerbose "Watering Complete: ${payload}"
             
             def dev = parent.getDeviceById(payload.device_id)
             if (dev) {
                 synchronized (wateringLock) {
-                    dev*.sendEvent(name: "valve", value: "closed")
+                    for (d in dev) {
+                        if (d.hasCapability("Valve"))
+                            d.sendEvent(name: "valve", value: "closed")
+                    }
                 }
+                parent.refreshLastWateringAmount(payload.device_id)
             }
-            parent.refreshLastWateringAmount(payload.device_id)
             break
         case "change_mode":
             if (payload.stations != null) {
@@ -230,6 +232,7 @@ def parse(String message) {
         case "program_changed":
         case "device_idle":
         case "clear_low_battery":
+        case "device_idle":
             // Do nothing
             break
         default:
