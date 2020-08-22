@@ -288,7 +288,8 @@ def updateTiles(data) {
                         d.sendEvent(name:"preset_runtime", value: presetWateringInt)
                         d.sendEvent(name:"manual_preset_runtime_min", value: presetWateringInt)
                     }
-                    d.sendEvent(name:"rain_delay", value: it.status.rain_delay)
+                    def rain_delay = it.status?.rain_delay.toInteger()?:0
+                    d.sendEvent(name:"rain_delay", value: "${rain_delay} hr${(rain_delay>1)?'s':''}")
                     d.sendEvent(name:"run_mode", value: it.status.run_mode)
                     d.sendEvent(name:"station", value: station)
 
@@ -316,20 +317,17 @@ def updateTiles(data) {
                     }
                     d.sendEvent(name:"scheduled_auto_on", value: scheduled_auto_on)
                     if (scheduled_auto_on) {
-                        if (it.status.rain_delay > 0) {
-                            d.sendEvent(name:"rain_icon", value: "rain")
-                            def nextRun = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status.next_start_time)
-                            def rainDelay = it.status.rain_delay
+                        def next_start_time = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status?.next_start_time)
+                        if (rain_delay > 0) {
                             use (TimeCategory) {
-                                nextRun = nextRun + rainDelay.hours
+                                next_start_time = next_start_time + rain_delay.hours
                             }
-                            d.sendEvent(name:"next_start_time", value: nextRun.getTime())
-                        } 
-                        else {
-                            d.sendEvent(name:"rain_icon", value: "sun")
-                            def next_start_time_local = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status.next_start_time)
-                            d.sendEvent(name:"next_start_time", value: next_start_time_local.getTime())
                         }
+                        d.sendEvent(name:"rain_icon", value: (rain_delay=0)?"sun":"rain")
+                        d.sendEvent(name:"next_start_time", value: next_start_time.format("EEE, MMM d",location.timeZone))
+                    } else {
+                        d.sendEvent(name:"rain_icon", value: "")
+                        d.sendEvent(name:"next_start_time", value: "")
                     }
 
                     // Sprinkler Timer Programs
