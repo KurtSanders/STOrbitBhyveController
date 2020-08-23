@@ -50,7 +50,18 @@ metadata {
         attribute "last_watering_volume", "number"
         attribute "water_flow_rate", "number"
 
-        command "setRainDelay", ["number"]
+//        command "setRainDelay", ["number"]
+        command(
+            "setRainDelay",
+            [
+                [
+                    "name":"Set a Manual Rain Delay",
+                    "description":"Select a value for a rain delay",
+                    "type":"ENUM",
+                    "constraints":["24","48","72"]
+                ]
+            ]
+        );
     }
 
     preferences {
@@ -92,7 +103,13 @@ def close() {
 }
 
 def setRainDelay(hours) {
-    parent.sendRainDelay(parent.getOrbitDeviceIdFromDNI(device.deviceNetworkId), hours)
+    def validRainDelay = ["24","48","72"]
+    if (validRainDelay.contains(hours)) {
+        log.info "Setting a Manual Rain Delay for ${hours} hrs"
+        parent.sendRainDelay(parent.getOrbitDeviceIdFromDNI(device.deviceNetworkId), hours)
+    } else {
+        log.error "Rain Delay value of ${hours} is invalid. Valid Rain Delay values are: ${validRainDelay}.  Command ignored!"
+    }
 }
 
 def sendRainDelay(device_id, hours) {
