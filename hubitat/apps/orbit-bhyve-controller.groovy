@@ -222,6 +222,7 @@ def updateTiles(data) {
             station = it.containsKey('zones') ? it.zones[i].station : zone
             d = getChildDevice("${DTHDNI(it.id)}:${station}")
             if (d) {
+                d.sendEvent(name:"last_APIupdate",value: "${timestamp()}")
                 // sendEvents for selected fields of the data record
                 d.sendEvent(name:"is_connected",value: it.is_connected)
                 // Check for Orbit WiFi bridge
@@ -238,7 +239,6 @@ def updateTiles(data) {
                     scheduled_auto_on = true
                     d = getChildDevice("${DTHDNI(it.id)}:${station}")
                     infoVerbose "Processing Orbit Sprinkler Device: '${it.name}', Orbit Station #${station}, Zone Name: '${zoneData.name}'"
-                    
                     if (it.status.watering_status) {
                         if (it.status.watering_status.stations != null) {
                             for (valveDevice in getValveDevices(it.id)) {
@@ -288,8 +288,6 @@ def updateTiles(data) {
                         d.sendEvent(name:"preset_runtime", value: presetWateringInt)
                         d.sendEvent(name:"manual_preset_runtime_min", value: presetWateringInt)
                     }
-                    def rain_delay = it.status?.rain_delay.toInteger()?:0
-                    d.sendEvent(name:"rain_delay", value: "${rain_delay} hr${(rain_delay>1)?'s':''}")
                     d.sendEvent(name:"run_mode", value: it.status.run_mode)
                     d.sendEvent(name:"station", value: station)
 
@@ -316,19 +314,29 @@ def updateTiles(data) {
                         }
                     }
                     d.sendEvent(name:"scheduled_auto_on", value: scheduled_auto_on)
+                    def rain_delay = it.status?.rain_delay.toInteger()?:0
+                    d.sendEvent(name:"rain_delay", value: rain_delay)
+                    def rain_delay_hrs_left = 0
+                    def next_start_time_fmt = "EEE, MMM d h:mm a"
                     if (scheduled_auto_on) {
                         def next_start_time = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status?.next_start_time)
                         if (rain_delay > 0) {
+                            def datenow = new Date()
+                            def rain_delay_started_at = Date.parse("yyyy-MM-dd'T'HH:mm:ssX",it.status?.rain_delay_started_at.replace('.000Z', '-0000'))
+                            d.sendEvent(name:"rain_delay_started_at", value: "${rain_delay_started_at.format("EEE, MMM d h:mm a yyyy",location.timeZone).replace("AM", "am").replace("PM","pm")}")
                             use (TimeCategory) {
                                 next_start_time = next_start_time + rain_delay.hours
+                                if (next_start_time.day - datenow.day) {next_start_time_fmt = "'Tomorrow', h:mm a"}
+                                rain_delay_hrs_left = rain_delay - (datenow - rain_delay_started_at).hours
                             }
                         }
                         d.sendEvent(name:"rain_icon", value: (rain_delay=0)?"sun":"rain")
-                        d.sendEvent(name:"next_start_time", value: next_start_time.format("EEE, MMM d",location.timeZone))
+                        d.sendEvent(name:"next_start_time", value: "${next_start_time.format(next_start_time_fmt,location.timeZone).replace("AM", "am").replace("PM","pm")}")
                     } else {
                         d.sendEvent(name:"rain_icon", value: "")
                         d.sendEvent(name:"next_start_time", value: "")
                     }
+                    d.sendEvent(name:"rain_delay_hrs_left", value: rain_delay_hrs_left)
 
                     // Sprinkler Timer Programs
                     if (stp) {
