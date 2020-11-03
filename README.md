@@ -4,6 +4,8 @@
 <img src="https://raw.githubusercontent.com/KurtSanders/STOrbitBhyveController/master/images/icons/readme.png" width="50">  
 [Change-log & Version Release Features](https://github.com/KurtSanders/STOrbitBhyveController/wiki/Features-by-Version)
 
+# This app is Unsupported by the devloper who now uses Hubitat.  The new SmartThings mobile client and platform is unreliable and buggy.
+
 ---
 
 #### Looking for the Hubitat™ version, it's [here](https://github.com/KurtSanders/STOrbitBhyveController/tree/master/hubitat#hubitat-orbitbhyve) and supports realtime automatically opening/closing valves, rain delays, etc.  This Hubitat App is highly recommended to be installed using [Hubitat Package Manager](https://raw.githubusercontent.com/dcmeglio/hubitat-packagemanager/master/apps/Package_Manager.groovy). You will need your Orbit BHyve username and password to connect. 
